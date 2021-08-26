@@ -1,4 +1,4 @@
-{ nixpkgs ? import <nixpkgs> {} }:
+{ nixpkgs ? import ./nix/pinned.nix {} }:
 let
   inherit (nixpkgs) pkgs;
   inherit (pkgs) haskellPackages;
