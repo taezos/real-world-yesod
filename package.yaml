@@ -95,6 +95,8 @@ tests:
     - real-world-yesod
     - hspec >=2.0.0
     - yesod-test
+    ghc-options:
+      - Wall
 
 # Define flags used by "yesod devel" to make compilation faster
 flags:
