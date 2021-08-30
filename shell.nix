@@ -9,6 +9,7 @@ pkgs.mkShell {
     haskellPackages.stack
     haskellPackages.ghc
     haskellPackages.yesod-bin
+    haskellPackages.ghcid
     pkgs.libpqxx
   ];
 }

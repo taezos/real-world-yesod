@@ -19,35 +19,53 @@ module Application
     , db
     ) where
 
-import           Control.Monad.Logger                 (liftLoc, runLoggingT)
-import           Database.Persist.Postgresql          (createPostgresqlPool,
-                                                       pgConnStr, pgPoolSize,
-                                                       runSqlPool)
-import           Import
-import           Language.Haskell.TH.Syntax           (qLocation)
-import           Network.HTTP.Client.TLS              (getGlobalManager)
-import           Network.Wai                          (Middleware)
-import           Network.Wai.Handler.Warp             (Settings,
-                                                       defaultSettings,
-                                                       defaultShouldDisplayException,
-                                                       getPort, runSettings,
-                                                       setHost, setOnException,
-                                                       setPort)
-import           Network.Wai.Middleware.RequestLogger (Destination (Logger),
-                                                       IPAddrSource (..),
-                                                       OutputFormat (..),
-                                                       destination,
-                                                       mkRequestLogger,
-                                                       outputFormat)
-import           System.Log.FastLogger                (defaultBufSize,
-                                                       newStdoutLoggerSet,
-                                                       toLogStr)
+-- monad-logger
+import           Control.Monad.Logger                 ( liftLoc, runLoggingT )
 
--- Import all relevant handler modules here.
--- Don't forget to add new modules to your cabal file!
+-- persistent
+import           Database.Persist.Postgresql
+    ( createPostgresqlPool
+    , pgConnStr
+    , pgPoolSize
+    )
+
+-- real-world-yesod
 import           Handler.Profile
+import           Import
 
--- This line actually creates our YesodDispatch instance. It is the second half
+-- tempalte-haskell
+import           Language.Haskell.TH.Syntax           ( qLocation )
+
+-- wai
+import           Network.HTTP.Client.TLS              ( getGlobalManager )
+import           Network.Wai                          ( Middleware )
+import           Network.Wai.Handler.Warp
+    ( Settings
+    , defaultSettings
+    , defaultShouldDisplayException
+    , getPort
+    , runSettings
+    , setHost
+    , setOnException
+    , setPort
+    )
+import           Network.Wai.Middleware.RequestLogger
+    ( Destination (Logger)
+    , IPAddrSource (..)
+    , OutputFormat (..)
+    , destination
+    , mkRequestLogger
+    , outputFormat
+    )
+
+-- fast-logger
+import           System.Log.FastLogger
+    ( defaultBufSize
+    , newStdoutLoggerSet
+    , toLogStr
+    )
+
+-- This line creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
 -- comments there for more details.
 mkYesodDispatch "App" resourcesApp
@@ -79,9 +97,6 @@ makeFoundation appSettings = do
   pool <- flip runLoggingT logFunc $ createPostgresqlPool
       (pgConnStr  $ appDatabaseConf appSettings)
       (pgPoolSize $ appDatabaseConf appSettings)
-
-  -- Perform database migration using our application's logging settings.
-  runLoggingT (runSqlPool (runMigration migrateAll) pool) logFunc
 
   -- Return the foundation
   return $ mkFoundation pool

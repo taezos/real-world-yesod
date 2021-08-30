@@ -1,0 +1,23 @@
+version: '3'
+services:
+  flyway:
+    image: flyway/flyway
+    entrypoint: /bin/bash
+    volumes:
+      - '.:/flyway/sql'
+    depends_on:
+      - db
+    command:
+      - '-c'
+      - >-
+        /flyway/flyway -url=jdbc:postgresql://db/ -user=real-world-yesod
+        -password=real-world-yesod -connectRetries=60
+        -locations=filesystem:/flyway/sql -X migrate
+  db:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=real-world-yesod
+      - POSTGRES_DB=real-world-yesod
+      - POSTGRES_USER=real-world-yesod
+    ports:
+      - 5432:5432

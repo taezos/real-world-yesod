@@ -1,46 +1,45 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE ExplicitForAll        #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE ExplicitForAll #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Foundation where
 
-import Import.NoFoundation
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Control.Monad.Logger (LogSource)
+-- real-world-yesod
+import           Auth.JWT             as JWT
+import           Import.NoFoundation
+import           Model.Guest
 
--- Used only when in "auth-dummy-login" setting is enabled.
-import Yesod.Auth.Dummy
+-- persistent
+import           Database.Persist.Sql ( ConnectionPool, runSqlPool )
 
-import Yesod.Auth.OpenId    (authOpenId, IdentifierType (Claimed))
-import Yesod.Core.Types     (Logger)
-import qualified Yesod.Core.Unsafe as Unsafe
+-- monad-logger
+import           Control.Monad.Logger ( LogSource )
+
+-- yesod
+import           Yesod.Auth.Dummy
+import qualified Yesod.Auth.Message   as AuthMsg
+import           Yesod.Auth.OpenId    ( IdentifierType (Claimed), authOpenId )
+import           Yesod.Core.Types     ( Logger )
+import qualified Yesod.Core.Unsafe    as Unsafe
+
+-- aeson
+import           Data.Aeson
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
 -- starts running, such as database connections. Every handler will have
 -- access to the data present here.
 data App = App
-    { appSettings    :: AppSettings
-    , appConnPool    :: ConnectionPool -- ^ Database connection pool.
-    , appHttpManager :: Manager
-    , appLogger      :: Logger
-    }
-
-data MenuItem = MenuItem
-    { menuItemLabel :: Text
-    , menuItemRoute :: Route App
-    , menuItemAccessCallback :: Bool
-    }
-
-data MenuTypes
-    = NavbarLeft MenuItem
-    | NavbarRight MenuItem
+  { appSettings    :: AppSettings
+  , appConnPool    :: ConnectionPool -- ^ Database connection pool.
+  , appHttpManager :: Manager
+  , appLogger      :: Logger
+  }
 
 -- This is where we define all of the routes in our application. For a full
 -- explanation of the syntax, please see:
@@ -56,9 +55,6 @@ data MenuTypes
 -- type Widget = WidgetFor App ()
 mkYesodData "App" $(parseRoutesFile "config/routes.yesodroutes")
 
--- | A convenient synonym for creating forms.
-type Form x = Html -> MForm (HandlerFor App) (FormResult x, Widget)
-
 -- | A convenient synonym for database access functions.
 type DB a = forall (m :: * -> *).
     (MonadUnliftIO m) => ReaderT SqlBackend m a
@@ -71,7 +67,7 @@ instance Yesod App where
   approot :: Approot App
   approot = ApprootRequest $ \app req ->
       case appRoot $ appSettings app of
-          Nothing -> getApprootText guessApproot app req
+          Nothing   -> getApprootText guessApproot app req
           Just root -> root
 
   -- Store session data on the client in encrypted cookies,
@@ -103,7 +99,8 @@ instance Yesod App where
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ProfileR _ = isAuthenticated
+  isAuthorized ( AuthR _ ) _ = pure Authorized
+  isAuthorized ProfileR _    = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
   -- in development, and warnings and errors in production.
@@ -130,7 +127,7 @@ instance YesodPersistRunner App where
   getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
-  type AuthId App = UserId
+  type AuthId App = GuestId
 
   -- Where to send a user after successful login
   loginDest :: App -> Route App
@@ -144,16 +141,16 @@ instance YesodAuth App where
   redirectToReferer :: App -> Bool
   redirectToReferer _ = True
 
-  authenticate :: (MonadHandler m, HandlerSite m ~ App)
-               => Creds App -> m (AuthenticationResult App)
-  authenticate creds = liftHandler $ runDB $ do
-    x <- getBy $ UniqueUser $ credsIdent creds
-    case x of
-      Just (Entity uid _) -> return $ Authenticated uid
-      Nothing -> Authenticated <$> insert User
-        { userIdent = credsIdent creds
-        , userPassword = Nothing
-        }
+  authenticate
+    :: (MonadHandler m, HandlerSite m ~ App)
+    => Creds App
+    -> m ( AuthenticationResult App )
+  authenticate _ =
+    maybe ( UserError AuthMsg.InvalidLogin ) Authenticated <$> maybeAuthId
+
+  maybeAuthId = do
+    mToken <- JWT.lookupToken
+    liftHandler $ maybe ( pure Nothing ) tokenToGuestId mToken
 
     -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
@@ -167,7 +164,7 @@ isAuthenticated = do
   muid <- maybeAuthId
   return $ case muid of
     Nothing -> Unauthorized "You must login to access this page"
-    Just _ -> Authorized
+    Just _  -> Authorized
 
 instance YesodAuthPersist App
 
@@ -194,3 +191,15 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+tokenToGuestId :: Text -> Handler ( Maybe GuestId )
+tokenToGuestId token = do
+  jwtSecret <- getJwtSecret
+  let mGuestId = fromJSON <$> JWT.tokenToJson jwtSecret token
+  case mGuestId of
+    Just ( Success guestId ) -> pure $ Just guestId
+    _                        -> pure Nothing
+
+getJwtSecret :: HandlerFor App Text
+getJwtSecret =
+  getsYesod $ appJwtSecret . appSettings

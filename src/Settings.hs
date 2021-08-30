@@ -12,17 +12,22 @@ module Settings where
 
 import           ClassyPrelude.Yesod
 import qualified Control.Exception           as Exception
-import           Data.Aeson                  (Result (..), fromJSON, withObject,
-                                              (.!=), (.:?))
-import           Data.FileEmbed              (embedFile)
-import           Data.Yaml                   (decodeEither')
-import           Database.Persist.Postgresql (PostgresConf)
-import           Language.Haskell.TH.Syntax  (Exp, Name, Q)
-import           Network.Wai.Handler.Warp    (HostPreference)
-import           Yesod.Default.Config2       (applyEnvValue, configSettingsYml)
-import           Yesod.Default.Util          (WidgetFileSettings,
-                                              widgetFileNoReload,
-                                              widgetFileReload)
+import           Data.Aeson
+    ( Result (..)
+    , fromJSON
+    , withObject
+    , (.!=)
+    , (.:?)
+    )
+import           Data.FileEmbed              ( embedFile )
+import           Data.Yaml                   ( decodeEither' )
+import           Database.Persist.Postgresql ( PostgresConf )
+import           Language.Haskell.TH.Syntax  ( Exp, Name, Q )
+import           Network.Wai.Handler.Warp    ( HostPreference )
+import           Yesod.Default.Config2
+    ( applyEnvValue
+    , configSettingsYml
+    )
 
 -- | Runtime settings to configure this application. These settings can be
 -- loaded from various sources: defaults, environment variables, config files,
@@ -60,6 +65,7 @@ data AppSettings = AppSettings
 
     , appAuthDummyLogin         :: Bool
     -- ^ Indicate if auth dummy login should be enabled.
+    , appJwtSecret              :: Text
     }
 
 instance FromJSON AppSettings where
@@ -88,8 +94,9 @@ instance FromJSON AppSettings where
         appAnalytics              <- o .:? "analytics"
 
         appAuthDummyLogin         <- o .:? "auth-dummy-login"      .!= dev
+        appJwtSecret              <- o .:  "jwt-secret"
 
-        return AppSettings {..}
+        pure AppSettings {..}
 
 -- | Settings for 'widgetFile', such as which template languages to support and
 -- default Hamlet settings.
@@ -97,8 +104,6 @@ instance FromJSON AppSettings where
 -- For more information on modifying behavior, see:
 --
 -- https://github.com/yesodweb/yesod/wiki/Overriding-widgetFile
-widgetFileSettings :: WidgetFileSettings
-widgetFileSettings = def
 
 -- | How static files should be combined.
 combineSettings :: CombineSettings
@@ -107,11 +112,6 @@ combineSettings = def
 -- The rest of this file contains settings which rarely need changing by a
 -- user.
 
-widgetFile :: String -> Q Exp
-widgetFile = (if appReloadTemplates compileTimeAppSettings
-                then widgetFileReload
-                else widgetFileNoReload)
-              widgetFileSettings
 
 -- | Raw bytes at compile time of @config/settings.yml@
 configSettingsYmlBS :: ByteString
@@ -126,7 +126,7 @@ configSettingsYmlValue = either Exception.throw id
 compileTimeAppSettings :: AppSettings
 compileTimeAppSettings =
     case fromJSON $ applyEnvValue False mempty configSettingsYmlValue of
-        Error e -> error e
+        Error e          -> error e
         Success settings -> settings
 
 -- The following two functions can be used to combine multiple CSS or JS files
