@@ -6,7 +6,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
-module Model.Guest where
+module Database.Model.Guest where
 
 -- real-world-yesod
 import           Data.Text

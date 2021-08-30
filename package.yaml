@@ -45,6 +45,7 @@ dependencies:
 - path-pieces
 - jwt
 - email-validate
+- bcrypt
 
 default-extensions:
   - OverloadedStrings
@@ -95,8 +96,6 @@ tests:
     - real-world-yesod
     - hspec >=2.0.0
     - yesod-test
-    ghc-options:
-      - Wall
 
 # Define flags used by "yesod devel" to make compilation faster
 flags:

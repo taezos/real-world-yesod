@@ -7,13 +7,20 @@ module TestImport
     ) where
 
 -- real-world-yesod
-import           Application           ( makeFoundation, makeLogWare )
-import           Model.Guest
+import           Api.Model.Guest
+import           Application               ( makeFoundation, makeLogWare )
+import           Database.Model.Guest
+import           Handler.Internal.Email
+import           Handler.Internal.Password
 
 -- classy-prelude
-import           ClassyPrelude         as X hiding ( Handler, delete, deleteBy )
+import           ClassyPrelude             as X hiding
+    ( Handler
+    , delete
+    , deleteBy
+    )
 
-import           Database.Persist      as X hiding ( get )
+import           Database.Persist          as X hiding ( get )
 import           Database.Persist.Sql
     ( SqlPersistM
     , connEscapeName
@@ -22,17 +29,16 @@ import           Database.Persist.Sql
     , runSqlPersistMPool
     , unSingle
     )
-import           Foundation            as X
+import           Foundation                as X
 
-import           Test.Hspec            as X
+import           Test.Hspec                as X
 
-import           Text.Shakespeare.Text ( st )
+import           Text.Shakespeare.Text     ( st )
 
 -- yesod
-import           Yesod.Auth            as X
-import           Yesod.Core.Unsafe     ( fakeHandlerGetLogger )
-import           Yesod.Default.Config2 ( loadYamlSettings, useEnv )
-import           Yesod.Test            as X
+import           Yesod.Auth                as X
+import           Yesod.Default.Config2     ( loadYamlSettings, useEnv )
+import           Yesod.Test                as X
 
 
 runDB :: SqlPersistM a -> YesodExample App a
@@ -40,8 +46,8 @@ runDB query = do
   app <- getTestYesod
   liftIO $ runDBWithApp app query
 
-runDbWithApp :: App -> SqlPersistM a -> IO a
-runDbWithApp app query = runSqlPersistMPool query ( appConnPool app )
+runDBWithApp :: App -> SqlPersistM a -> IO a
+runDBWithApp app query = runSqlPersistMPool query ( appConnPool app )
 
 withApp :: SpecWith (TestApp App) -> Spec
 withApp = before $ do
@@ -58,7 +64,7 @@ withApp = before $ do
 -- 'withApp' calls it before each test, creating a clean environment for each
 -- spec to run in.
 wipeDB :: App -> IO ()
-wipeDB app = runDbWithApp app $ do
+wipeDB app = runDBWithApp app $ do
   tables <- getTables
   sqlBackend <- ask
   let escapedTables = fmap ( connEscapeName sqlBackend . DBName ) tables
@@ -79,16 +85,24 @@ getTables = do
 -- | Authenticate as a user. This relies on the `auth-dummy-login: true` flag
 -- being set in test-settings.yaml, which enables dummy authentication in
 -- Foundation.hs
-authenticateAs :: Entity Guest -> YesodExample App ()
+authenticateAs :: Entity GuestLogin -> YesodExample App ()
 authenticateAs (Entity _ u) = do
   request $ do
     setMethod "POST"
-    addPostParam "email" $ guestEmail u
+    addPostParam "email" $ guestLoginEmail u
     setUrl $ AuthR $ PluginR "dummy" []
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
-createUser :: Text -> YesodExample App (Entity Guest)
-createUser ident = runDB $ do
-  user <- insertEntity Guest {}
+createGuest :: Text -> YesodExample App (Entity Guest)
+createGuest ident = runDB $ do
+  email <- lift $ maybe ( error "error" ) pure $ mkEmail ident
+  mPass <- ( mkPassword "password" )
+  let pass = maybe ( error "password error" ) id mPass
+  user <- insertEntity Guest
+    { guestFirstName = Nothing
+    , guestLastName = Nothing
+    , guestEmail = email
+    , guestPassword = pass
+    }
   return user

@@ -11,7 +11,7 @@ module Foundation where
 -- real-world-yesod
 import qualified Auth.JWT             as JWT
 import           Import.NoFoundation
-import           Model.Guest
+import           Database.Model.Guest
 
 -- persistent
 import           Database.Persist.Sql ( ConnectionPool, runSqlPool )
