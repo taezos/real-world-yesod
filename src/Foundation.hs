@@ -6,11 +6,10 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
-
 module Foundation where
 
 -- real-world-yesod
-import           Auth.JWT             as JWT
+import qualified Auth.JWT             as JWT
 import           Import.NoFoundation
 import           Model.Guest
 
@@ -100,6 +99,8 @@ instance Yesod App where
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
   isAuthorized ( AuthR _ ) _ = pure Authorized
+  isAuthorized LogoutDestR _ = pure Authorized
+  isAuthorized LoginDestR _  = pure Authorized
   isAuthorized ProfileR _    = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
@@ -131,11 +132,11 @@ instance YesodAuth App where
 
   -- Where to send a user after successful login
   loginDest :: App -> Route App
-  loginDest _ = undefined
+  loginDest _ = LoginDestR
 
   -- Where to send a user after logout
   logoutDest :: App -> Route App
-  logoutDest _ = undefined
+  logoutDest _ = LogoutDestR
 
   -- Override the above two destinations when a Referer: header is present
   redirectToReferer :: App -> Bool

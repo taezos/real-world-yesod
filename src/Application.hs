@@ -30,6 +30,8 @@ import           Database.Persist.Postgresql
     )
 
 -- real-world-yesod
+import           Handler.Logout
+import           Handler.Login
 import           Handler.Profile
 import           Import
 

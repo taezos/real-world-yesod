@@ -4,3 +4,7 @@
 /auth AuthR Auth getAuth
 
 /profile ProfileR GET
+
+/logout LogoutDestR GET
+
+/login LoginDestR POST
