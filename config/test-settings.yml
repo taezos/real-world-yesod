@@ -6,6 +6,8 @@ database:
   # something like:
   #
   #   database: "_env:PGDATABASE:real-world-yesod_test"
-  database: real-world-yesod_test
+  user:     real-world-yesod-test
+  database: real-world-yesod-test
+  password: real-world-yesod-test
 
 auth-dummy-login: true

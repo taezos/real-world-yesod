@@ -1,19 +1,29 @@
-version: '3'
+version: '3.9'
 services:
-  flyway:
+  db-test:
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=real-world-yesod-test
+      - POSTGRES_DB=real-world-yesod-test
+      - POSTGRES_USER=real-world-yesod-test
+    ports:
+      - 5432:5432
+    profiles:
+      - db-test
+
+  flyway-test:
     image: flyway/flyway
     entrypoint: /bin/bash
     volumes:
-      - '.:/flyway/sql'
-    depends_on:
-      - db
+      - .:/flyway/sql
     command:
       - '-c'
       - >-
-        /flyway/flyway -url=jdbc:postgresql://db/ -user=real-world-yesod
-        -password=real-world-yesod -connectRetries=60
+        /flyway/flyway -url=jdbc:postgresql://db-test/ -user=real-world-yesod-test
+        -password=real-world-yesod-test -connectRetries=60
         -locations=filesystem:/flyway/sql -X migrate
-  db:
+
+  db-dev:
     image: postgres:alpine
     environment:
       - POSTGRES_PASSWORD=real-world-yesod
@@ -21,3 +31,21 @@ services:
       - POSTGRES_USER=real-world-yesod
     ports:
       - 5432:5432
+    profiles:
+      - db-dev
+
+  flyway-dev:
+    image: flyway/flyway
+    entrypoint: /bin/bash
+    volumes:
+      - '.:/flyway/sql'
+    depends_on:
+      - db-dev
+    command:
+      - '-c'
+      - >-
+        /flyway/flyway -url=jdbc:postgresql://db-dev/ -user=real-world-yesod
+        -password=real-world-yesod -connectRetries=60
+        -locations=filesystem:/flyway/sql -X migrate
+    profiles:
+      - flyway-dev
