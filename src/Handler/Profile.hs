@@ -1,12 +1,12 @@
-{-# LANGUAGE NoImplicitPrelude #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 module Handler.Profile where
 
-import Import
+-- real-world-yesod
+import           Api.Guest
+import           Import
 
-getProfileR :: Handler Value
-getProfileR = do
-  pure Null
+getProfileR :: Text -> Handler Value
+getProfileR username =
+  fmap toJSON <$> runDB $ selectGuestProfileByUsernameIO username

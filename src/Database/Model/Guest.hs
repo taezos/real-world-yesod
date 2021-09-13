@@ -12,20 +12,23 @@ module Database.Model.Guest where
 import           Data.Text
 import           Handler.Internal.Email
 import           Handler.Internal.Password
+import           Import.NoFoundation
 import           Instances                 ()
 
 -- uuid
 import           Data.UUID
-
--- persistent
-import           Database.Persist.TH
 
 share [ mkPersist sqlSettings ] [persistLowerCase|
 Guest
   Id UUID default=uuid_generate_v4()
   firstName Text Maybe
   lastName  Text Maybe
-  email     Email
+  email     Email Maybe
+  username  Text
   password  Password
-  UniqueGuest email
+  bio       Text Maybe
+  imageLink Text Maybe
+  createdAt UTCTime
+  UniqueGuest username
+  deriving Show
 |]

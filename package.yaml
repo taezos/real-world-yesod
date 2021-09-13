@@ -46,6 +46,10 @@ dependencies:
 - jwt
 - email-validate
 - bcrypt
+- casing
+- esqueleto
+- HUnit
+- http-types
 
 default-extensions:
   - OverloadedStrings
@@ -88,14 +92,21 @@ executables:
 
 # Test suite
 tests:
-  real-world-yesod-test:
+  integration:
     main: Spec.hs
-    source-dirs: test
+    source-dirs: test/integration/
     ghc-options: -Wall
     dependencies:
     - real-world-yesod
     - hspec >=2.0.0
     - yesod-test
+  unit:
+    main: Spec.hs
+    source-dirs: test/unit/
+    ghc-options: -Wall
+    dependencies:
+    - real-world-yesod
+    - hspec >=2.0.0
 
 # Define flags used by "yesod devel" to make compilation faster
 flags:

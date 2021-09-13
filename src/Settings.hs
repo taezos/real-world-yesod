@@ -22,7 +22,6 @@ import           Data.Aeson
 import           Data.FileEmbed              ( embedFile )
 import           Data.Yaml                   ( decodeEither' )
 import           Database.Persist.Postgresql ( PostgresConf )
-import           Language.Haskell.TH.Syntax  ( Exp, Name, Q )
 import           Network.Wai.Handler.Warp    ( HostPreference )
 import           Yesod.Default.Config2
     ( applyEnvValue
@@ -129,18 +128,3 @@ compileTimeAppSettings =
         Error e          -> error e
         Success settings -> settings
 
--- The following two functions can be used to combine multiple CSS or JS files
--- at compile time to decrease the number of http requests.
--- Sample usage (inside a Widget):
---
--- > $(combineStylesheets 'StaticR [style1_css, style2_css])
-
-combineStylesheets :: Name -> [Route Static] -> Q Exp
-combineStylesheets = combineStylesheets'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings
-
-combineScripts :: Name -> [Route Static] -> Q Exp
-combineScripts = combineScripts'
-    (appSkipCombining compileTimeAppSettings)
-    combineSettings

@@ -1,6 +1,7 @@
 {-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes       #-}
+{-# LANGUAGE RecordWildCards   #-}
 module TestImport
     ( module TestImport
     , module X
@@ -8,19 +9,19 @@ module TestImport
 
 -- real-world-yesod
 import           Api.Model.Guest
-import           Application               ( makeFoundation, makeLogWare )
+import           Application                ( makeFoundation, makeLogWare )
 import           Database.Model.Guest
-import           Handler.Internal.Email
+import           Foundation
 import           Handler.Internal.Password
 
 -- classy-prelude
-import           ClassyPrelude             as X hiding
+import           ClassyPrelude              as X hiding
     ( Handler
     , delete
     , deleteBy
     )
 
-import           Database.Persist          as X hiding ( get )
+import           Database.Persist           as X hiding ( get )
 import           Database.Persist.Sql
     ( SqlPersistM
     , connEscapeName
@@ -29,17 +30,34 @@ import           Database.Persist.Sql
     , runSqlPersistMPool
     , unSingle
     )
-import           Foundation                as X
+import           Foundation                 as X
 
-import           Test.Hspec                as X
+import           Test.Hspec                 as X
 
-import           Text.Shakespeare.Text     ( st )
+import           Text.Shakespeare.Text      ( st )
 
 -- yesod
-import           Yesod.Auth                as X
-import           Yesod.Default.Config2     ( loadYamlSettings, useEnv )
-import           Yesod.Test                as X
+import           Yesod.Auth                 as X
+import           Yesod.Default.Config2      ( loadYamlSettings, useEnv )
+import           Yesod.Test                 as X
 
+-- aeson
+import           Data.Aeson
+
+-- wai-test
+import           Network.Wai.Test           ( SResponse (..) )
+
+-- bytestring
+import qualified Data.ByteString.Lazy.Char8 as BL8
+
+-- HUnit
+import           Test.HUnit                 ( assertFailure )
+
+-- yesod-core
+import           Yesod.Core.Unsafe          ( fakeHandlerGetLogger )
+
+-- http-types
+import           Network.HTTP.Types
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
@@ -94,15 +112,36 @@ authenticateAs (Entity _ u) = do
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
-createGuest :: Text -> YesodExample App (Entity Guest)
-createGuest ident = runDB $ do
-  email <- lift $ maybe ( error "error" ) pure $ mkEmail ident
-  mPass <- ( mkPassword "password" )
+createGuest :: Text -> Text -> UTCTime -> YesodExample App (Entity Guest)
+createGuest username password createdAt = runDB $ do
+  mPass <- mkPassword password
   let pass = maybe ( error "password error" ) id mPass
-  user <- insertEntity Guest
+  insertEntity Guest
     { guestFirstName = Nothing
     , guestLastName = Nothing
-    , guestEmail = email
+    , guestEmail = Nothing
     , guestPassword = pass
+    , guestUsername = username
+    , guestCreatedAt = createdAt
+    , guestBio = Nothing
+    , guestImageLink = Nothing
     }
-  return user
+
+getJsonResponse :: FromJSON a => YesodExample App a
+getJsonResponse =
+  withResponse $ \SResponse{..} ->
+  case fromJSON <$> decode simpleBody of
+    Just ( Success a ) -> pure a
+    _ -> liftIO $ assertFailure $ "cannot decode JSON: " <> BL8.unpack simpleBody
+
+authenticatedRequest :: GuestId -> RequestBuilder App () -> YesodExample App ()
+authenticatedRequest guestId reqBuilder = do
+  token <- runHandler $ guestIdToToken guestId
+  request $ do
+    addRequestHeader (hAuthorization, "token " <> encodeUtf8 token)
+    reqBuilder
+
+runHandler :: Handler a -> YesodExample App a
+runHandler handler = do
+  app <- getTestYesod
+  fakeHandlerGetLogger appLogger app handler

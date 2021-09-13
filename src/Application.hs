@@ -2,8 +2,10 @@
 {-# LANGUAGE NoImplicitPrelude     #-}
 {-# LANGUAGE OverloadedStrings     #-}
 {-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 module Application
     ( getApplicationDev
@@ -30,8 +32,9 @@ import           Database.Persist.Postgresql
     )
 
 -- real-world-yesod
-import           Handler.Logout
+import           Handler.Guest
 import           Handler.Login
+import           Handler.Logout
 import           Handler.Profile
 import           Import
 
@@ -83,6 +86,8 @@ makeFoundation appSettings = do
   appHttpManager <- getGlobalManager
   appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
 
+  appCurrentTime <- getCurrentTime
+
   -- We need a log function to create a connection pool. We need a connection
   -- pool to create our foundation. And we need our foundation to get a
   -- logging function. To get out of this loop, we initially create a
@@ -92,8 +97,9 @@ makeFoundation appSettings = do
       -- The App {..} syntax is an example of record wild cards. For more
       -- information, see:
       -- https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html
-      tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
-      logFunc = messageLoggerSource tempFoundation appLogger
+
+  let tempFoundation = mkFoundation $ error "connPool forced in tempFoundation"
+  let logFunc = messageLoggerSource tempFoundation appLogger
 
   -- Create the database connection pool
   pool <- flip runLoggingT logFunc $ createPostgresqlPool

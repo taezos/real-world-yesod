@@ -23,6 +23,9 @@ newtype Email = Email
   { unEmail :: CI Text
   } deriving ( Eq, Show )
 
+emailToText :: Email -> Text
+emailToText Email{..} = CI.original unEmail
+
 mkEmail :: Text -> Maybe Email
 mkEmail email =
   if Email.isValid  $ encodeUtf8 email

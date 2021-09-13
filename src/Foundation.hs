@@ -6,12 +6,13 @@
 {-# LANGUAGE RankNTypes            #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE ViewPatterns          #-}
 module Foundation where
 
 -- real-world-yesod
 import qualified Auth.JWT             as JWT
-import           Import.NoFoundation
 import           Database.Model.Guest
+import           Import.NoFoundation
 
 -- persistent
 import           Database.Persist.Sql ( ConnectionPool, runSqlPool )
@@ -38,6 +39,7 @@ data App = App
   , appConnPool    :: ConnectionPool -- ^ Database connection pool.
   , appHttpManager :: Manager
   , appLogger      :: Logger
+  , appCurrentTime :: UTCTime
   }
 
 -- This is where we define all of the routes in our application. For a full
@@ -65,9 +67,9 @@ instance Yesod App where
   -- see: https://github.com/yesodweb/yesod/wiki/Overriding-approot
   approot :: Approot App
   approot = ApprootRequest $ \app req ->
-      case appRoot $ appSettings app of
-          Nothing   -> getApprootText guessApproot app req
-          Just root -> root
+    case appRoot $ appSettings app of
+      Nothing   -> getApprootText guessApproot app req
+      Just root -> root
 
   -- Store session data on the client in encrypted cookies,
   -- default session idle timeout is 120 minutes
@@ -98,10 +100,11 @@ instance Yesod App where
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ( AuthR _ ) _ = pure Authorized
-  isAuthorized LogoutDestR _ = pure Authorized
-  isAuthorized LoginDestR _  = pure Authorized
-  isAuthorized ProfileR _    = isAuthenticated
+  isAuthorized ( AuthR _ ) _    = pure Authorized
+  isAuthorized LogoutDestR _    = pure Authorized
+  isAuthorized LoginDestR _     = pure Authorized
+  isAuthorized GuestRegisterR _ = pure Authorized
+  isAuthorized ( ProfileR _ ) _ = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
   -- in development, and warnings and errors in production.
@@ -192,6 +195,11 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Sending-email
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
+
+guestIdToToken :: GuestId -> HandlerFor App Text
+guestIdToToken guestId = do
+  jwtSecret <- getJwtSecret
+  pure $ JWT.jsonToToken jwtSecret $ toJSON guestId
 
 tokenToGuestId :: Text -> Handler ( Maybe GuestId )
 tokenToGuestId token = do

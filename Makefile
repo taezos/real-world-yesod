@@ -1,8 +1,14 @@
 ghcid-lib:
 	ghcid -c "stack repl real-world-yesod:lib"
 
-ghcid-test:
-	ghcid -c "stack repl real-world-yesod:real-world-yesod-test"
+ghcid-unit-test:
+	ghcid -c "stack repl real-world-yesod:unit"
 
-ghcid-lib-test:
-	ghcid -c "stack repl real-world-yesod:lib real-world-yesod:real-world-yesod-test" --test="main"
+ghcid-integration-test:
+	ghcid -c "stack repl real-world-yesod:integration"
+
+ghcid-lib-unit-test:
+	ghcid -c "stack repl real-world-yesod:lib real-world-yesod:unit" --test="main"
+
+ghcid-lib-integration-test:
+	ghcid -c "stack repl real-world-yesod:lib real-world-yesod:integration" --test="main"

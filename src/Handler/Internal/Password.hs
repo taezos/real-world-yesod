@@ -18,6 +18,8 @@ newtype Password = Password
   { unPassword :: Text
   } deriving ( Eq, Show )
 
+type MkPasswordFn password m = password -> m ( Maybe Password )
+
 mkPassword :: MonadIO m => Text -> m ( Maybe Password )
 mkPassword pass = do
   mPass <- liftIO

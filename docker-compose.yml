@@ -39,8 +39,6 @@ services:
     entrypoint: /bin/bash
     volumes:
       - '.:/flyway/sql'
-    depends_on:
-      - db-dev
     command:
       - '-c'
       - >-
