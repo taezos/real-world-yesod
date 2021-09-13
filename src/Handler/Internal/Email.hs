@@ -44,4 +44,3 @@ instance PersistField Email where
 
 instance PersistFieldSql Email where
   sqlType _ = SqlString
-
