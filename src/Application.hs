@@ -86,8 +86,6 @@ makeFoundation appSettings = do
   appHttpManager <- getGlobalManager
   appLogger <- newStdoutLoggerSet defaultBufSize >>= makeYesodLogger
 
-  appCurrentTime <- getCurrentTime
-
   -- We need a log function to create a connection pool. We need a connection
   -- pool to create our foundation. And we need our foundation to get a
   -- logging function. To get out of this loop, we initially create a
@@ -130,7 +128,6 @@ makeLogWare foundation =
        else FromSocket)
   , destination = Logger $ loggerSet $ appLogger foundation
   }
-
 
 -- | Warp settings for the given foundation value.
 warpSettings :: App -> Settings
@@ -203,7 +200,8 @@ shutdownApp _ = return ()
 
 -- | Run a handler
 handler :: Handler a -> IO a
-handler h = getAppSettings >>= makeFoundation >>= flip unsafeHandler h
+handler h = do
+  getAppSettings >>= makeFoundation >>= flip unsafeHandler h
 
 -- | Run DB queries
 db :: ReaderT SqlBackend Handler a -> IO a

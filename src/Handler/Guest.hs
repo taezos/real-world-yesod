@@ -10,8 +10,9 @@ import           Import
 postGuestRegisterR :: Handler Value
 postGuestRegisterR = do
   createGuest <- requireCheckJsonBody :: Handler CreateGuest
-  currentTime <- getsYesod appCurrentTime
+  currentTime <- liftIO getCurrentTime
   res <- runDB $ insertGuestIO createGuest currentTime
   case res of
     Left errMsg -> sendResponseStatus status404 errMsg
     Right guestKey -> pure $ toJSON guestKey
+
