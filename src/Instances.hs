@@ -15,12 +15,12 @@ import qualified Data.UUID             as UUID
 import qualified Data.ByteString.Char8 as B8
 
 instance PersistField UUID where
-  toPersistValue = PersistDbSpecific . B8.pack . UUID.toString
-  fromPersistValue ( PersistDbSpecific t ) =
+  toPersistValue = PersistLiteral . B8.pack . UUID.toString
+  fromPersistValue ( PersistLiteral t ) =
     case UUID.fromString $ B8.unpack t of
       Nothing   -> Left "Invalid UUID"
       Just uuid -> Right uuid
-  fromPersistValue _ = Left "Not PersistDbSpecific"
+  fromPersistValue _ = Left "Not PersistLiteral"
 
 instance PersistFieldSql UUID where
   sqlType _ = SqlOther "uuid"

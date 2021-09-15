@@ -11,5 +11,8 @@ pkgs.mkShell {
     haskellPackages.yesod-bin
     haskellPackages.ghcid
     pkgs.libpqxx
+    pkgs.postgresql
+    pkgs.zlib
   ];
+  LC_ALL = "C.UTF-8";
 }
