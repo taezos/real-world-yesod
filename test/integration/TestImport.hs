@@ -24,12 +24,14 @@ import           ClassyPrelude              as X hiding
 import           Database.Persist           as X hiding ( get )
 import           Database.Persist.Sql
     ( SqlPersistM
-    , connEscapeName
     , rawExecute
     , rawSql
     , runSqlPersistMPool
     , unSingle
     )
+
+import Database.Persist.SqlBackend.Internal ( connEscapeFieldName )
+
 import           Foundation                 as X
 
 import           Test.Hspec                 as X
@@ -85,7 +87,7 @@ wipeDB :: App -> IO ()
 wipeDB app = runDBWithApp app $ do
   tables <- getTables
   sqlBackend <- ask
-  let escapedTables = fmap ( connEscapeName sqlBackend . DBName ) tables
+  let escapedTables = fmap ( connEscapeFieldName sqlBackend . FieldNameDB ) tables
   let query = "TRUNCATE TABLE " <> intercalate ", " escapedTables
   rawExecute query []
 

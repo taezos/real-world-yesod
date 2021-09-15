@@ -1,6 +1,6 @@
 import (builtins.fetchGit {
-  name = "nixpkgs-21.05";
+  name = "nixpkgs-unstable";
   url = "https://github.com/nixos/nixpkgs.git";
-  ref = "refs/tags/21.05";
-  rev = "7e9b0dff974c89e070da1ad85713ff3c20b0ca97";
+  ref = "HEAD";
+  rev = "cf0caf529c33c140863ebfa43691f7b69fe2233c";
 })
