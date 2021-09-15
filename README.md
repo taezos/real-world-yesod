@@ -25,6 +25,7 @@ docker-compose up flyway-test
 Tools required:
 * Stack
 * ghcid
+* yesod
 
 ### For nix users
 Start a shell with
@@ -33,6 +34,12 @@ nix-shell
 ```
 
 ## Development
+
+Install yesod with:
+
+``` sh
+stack install yesod-bin --install-ghc
+```
 
 Start a development server with:
 
@@ -84,4 +91,3 @@ nix:
   enable: true
   packages: [ postgresql, zlib.dev, zlib.out ]
 ```
-
