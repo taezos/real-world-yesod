@@ -26,12 +26,13 @@ Guest
   Id UUID default=uuid_generate_v4()
   firstName Text Maybe
   lastName  Text Maybe
-  email     Email Maybe
+  email     Email
   username  Text
   password  Password
   bio       Text Maybe
   imageLink Text Maybe
   createdAt UTCTime
   UniqueGuest username
+  UniqueEmail email
   deriving Show
 |]

@@ -1,8 +1,6 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/api/auth AuthR Auth getAuth
-
 /api/profile/#Text ProfileR GET
 
 /api/logout LogoutDestR GET
@@ -10,3 +8,5 @@
 /api/login LoginDestR POST
 
 /api/guest GuestRegisterR POST
+
+/api/guest/login GuestLoginR POST

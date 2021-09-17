@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications    #-}
 module Handler.Guest where
 
 -- real-world-yesod
@@ -9,10 +10,17 @@ import           Import
 
 postGuestRegisterR :: Handler Value
 postGuestRegisterR = do
-  createGuest <- requireCheckJsonBody :: Handler CreateGuest
+  createGuest <- requireCheckJsonBody @Handler @CreateGuest
   currentTime <- liftIO getCurrentTime
   res <- runDB $ insertGuestIO createGuest currentTime
   case res of
-    Left errMsg -> sendResponseStatus status404 errMsg
+    Left errMsg    -> sendResponseStatus status404 errMsg
     Right guestKey -> pure $ toJSON guestKey
 
+postGuestLoginR :: Handler Value
+postGuestLoginR = do
+  guestLogin <- requireCheckJsonBody @Handler @GuestLogin
+  res <- runDB $ selectGuestLoginIO guestIdToToken guestLogin
+  case res of
+    Left errMsg -> sendResponseStatus status404 errMsg
+    Right guestAuth -> pure $ toJSON guestAuth

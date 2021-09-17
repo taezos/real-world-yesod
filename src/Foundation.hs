@@ -99,7 +99,7 @@ instance Yesod App where
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ( AuthR _ ) _    = pure Authorized
+  isAuthorized GuestLoginR _    = pure Authorized
   isAuthorized LogoutDestR _    = pure Authorized
   isAuthorized LoginDestR _     = pure Authorized
   isAuthorized GuestRegisterR _ = pure Authorized

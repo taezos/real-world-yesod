@@ -25,7 +25,7 @@ data GuestLogin = GuestLogin
 data CreateGuest = CreateGuest
   { createGuestFirstName :: Maybe Text
   , createGuestLastName  :: Maybe Text
-  , createGuestEmail     :: Maybe Text
+  , createGuestEmail     :: Text
   , createGuestUsername  :: Text
   , createGuestPassword  :: Text
   , createGuestBio       :: Maybe Text
@@ -42,6 +42,14 @@ data GuestProfile = GuestProfile
   , guestProfileImageLink :: Maybe Text
   } deriving ( Eq, Show )
 
+data GuestAuth = GuestAuth
+  { guestAuthEmail    :: Text
+  , guestAuthToken    :: Text
+  , guestAuthUsername :: Text
+  , guestAuthBio      :: Maybe Text
+  , guestAuthImage    :: Maybe Text
+  } deriving ( Eq, Show )
+
 $(deriveJSON defaultOptions
   { fieldLabelModifier = camel . drop ( genericLength "GuestLogin" )
   } ''GuestLogin)
@@ -53,3 +61,7 @@ $(deriveJSON defaultOptions
 $(deriveJSON defaultOptions
   { fieldLabelModifier = camel . drop ( genericLength "CreateGuest" )
   } ''CreateGuest)
+
+$(deriveJSON defaultOptions
+  { fieldLabelModifier = camel . drop ( genericLength "GuestAuth" )
+  } ''GuestAuth)
