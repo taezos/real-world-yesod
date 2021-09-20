@@ -9,19 +9,23 @@ module TestImport
 
 -- real-world-yesod
 import           Api.Model.Guest
-import           Application                ( makeFoundation, makeLogWare )
+import           Application
+    ( makeFoundation
+    , makeLogWare
+    )
 import           Database.Model.Guest
 import           Foundation
+import           Handler.Internal.Email
 import           Handler.Internal.Password
 
 -- classy-prelude
-import           ClassyPrelude              as X hiding
+import           ClassyPrelude                        as X hiding
     ( Handler
     , delete
     , deleteBy
     )
 
-import           Database.Persist           as X hiding ( get )
+import           Database.Persist                     as X hiding ( get )
 import           Database.Persist.Sql
     ( SqlPersistM
     , rawExecute
@@ -30,33 +34,36 @@ import           Database.Persist.Sql
     , unSingle
     )
 
-import Database.Persist.SqlBackend.Internal ( connEscapeFieldName )
+import           Database.Persist.SqlBackend.Internal ( connEscapeFieldName )
 
-import           Foundation                 as X
+import           Foundation                           as X
 
-import           Test.Hspec                 as X
+import           Test.Hspec                           as X
 
-import           Text.Shakespeare.Text      ( st )
+import           Text.Shakespeare.Text                ( st )
 
 -- yesod
-import           Yesod.Auth                 as X
-import           Yesod.Default.Config2      ( loadYamlSettings, useEnv )
-import           Yesod.Test                 as X
+import           Yesod.Auth                           as X
+import           Yesod.Default.Config2
+    ( loadYamlSettings
+    , useEnv
+    )
+import           Yesod.Test                           as X
 
 -- aeson
 import           Data.Aeson
 
 -- wai-test
-import           Network.Wai.Test           ( SResponse (..) )
+import           Network.Wai.Test                     ( SResponse (..) )
 
 -- bytestring
-import qualified Data.ByteString.Lazy.Char8 as BL8
+import qualified Data.ByteString.Lazy.Char8           as BL8
 
 -- HUnit
-import           Test.HUnit                 ( assertFailure )
+import           Test.HUnit                           ( assertFailure )
 
 -- yesod-core
-import           Yesod.Core.Unsafe          ( fakeHandlerGetLogger )
+import           Yesod.Core.Unsafe                    ( fakeHandlerGetLogger )
 
 -- http-types
 import           Network.HTTP.Types
@@ -102,26 +109,17 @@ getTables = do
 
     return $ map unSingle tables
 
--- | Authenticate as a user. This relies on the `auth-dummy-login: true` flag
--- being set in test-settings.yaml, which enables dummy authentication in
--- Foundation.hs
-authenticateAs :: Entity GuestLogin -> YesodExample App ()
-authenticateAs (Entity _ u) = do
-  request $ do
-    setMethod "POST"
-    addPostParam "email" $ guestLoginEmail u
-    setUrl $ AuthR $ PluginR "dummy" []
-
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
 createGuest :: Text -> Text -> UTCTime -> YesodExample App (Entity Guest)
 createGuest username password createdAt = runDB $ do
   mPass <- mkPassword password
   let pass = maybe ( error "password error" ) id mPass
+  let email = maybe ( error "email error" ) id $ mkEmail "test@test.com"
   insertEntity Guest
     { guestFirstName = Nothing
     , guestLastName = Nothing
-    , guestEmail = Nothing
+    , guestEmail = email
     , guestPassword = pass
     , guestUsername = username
     , guestCreatedAt = createdAt

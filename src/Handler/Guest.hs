@@ -20,7 +20,8 @@ postGuestRegisterR = do
 postGuestLoginR :: Handler Value
 postGuestLoginR = do
   guestLogin <- requireCheckJsonBody @Handler @GuestLogin
-  res <- runDB $ selectGuestLoginIO guestIdToToken guestLogin
-  case res of
-    Left errMsg -> sendResponseStatus status404 errMsg
-    Right guestAuth -> pure $ toJSON guestAuth
+  pure $ toJSON guestLogin
+  -- res <- runDB $ selectGuestLoginIO guestIdToToken guestLogin
+  -- case res of
+  --   Left errMsg -> sendResponseStatus status404 errMsg
+  --   Right guestAuth -> pure $ toJSON guestAuth

@@ -5,6 +5,9 @@ import           Api.Model.Guest
 import           Database.Model.Guest
 import           TestImport
 
+-- aeson
+import qualified Data.Aeson           as JSON
+
 spec :: Spec
 spec = withApp $ do
   let guestPasswordTxt = "password"
@@ -28,3 +31,13 @@ spec = withApp $ do
           assertEq "response username should be equal to username input"
             ( guestProfileUsername response )
             guestUsernameTxt
+
+    it "will login a guest" $ do
+      currentTime <- liftIO getCurrentTime
+      void $ createGuest guestUsernameTxt guestPasswordTxt currentTime
+      let guestLogin = GuestLogin
+            { guestLoginEmail = "test@test.com"
+            , guestLoginPassword = guestPasswordTxt
+            }
+      postBody GuestLoginR $ JSON.encode guestLogin
+      statusIs 200
