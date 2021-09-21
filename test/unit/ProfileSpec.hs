@@ -4,10 +4,10 @@
 module ProfileSpec where
 
 -- real-world-yesod
-import           Api.Guest
-import           Api.Model.Guest
+import           Api.User
+import           Api.Model.User
 import qualified Auth.JWT                  as JWT
-import           Database.Model.Guest
+import           Database.Model.User
 import           Handler.Internal.Email
 import           Handler.Internal.Password
 import           TestImport
@@ -26,82 +26,82 @@ import qualified Data.Aeson                as JSON
 
 spec :: Spec
 spec = do
-  let guestPasswordTxt = "password"
-  let guestUsernameTxt = "guest"
-  let guestEmailTxt = "guest@test.com"
-  let guestBioTxt = "I am a guest"
+  let userPasswordTxt = "password"
+  let usernameTxt = "user"
+  let userEmailTxt = "user@test.com"
+  let userBioTxt = "I am a user"
   let txtUUID = "123e4567-e89b-12d3-a456-426614174000"
 
-  describe "ProfileSpec" $ do
-    it "will build a guest profile from a guest entity" $ do
-      maybePassword <- mkPassword guestPasswordTxt
-      let guestEntity = do
+  describe "UserSpec" $ do
+    it "will build a user profile from a user entity" $ do
+      maybePassword <- mkPassword userPasswordTxt
+      let userEntity = do
             password <- maybePassword
-            guestKey <- UUID.fromText txtUUID
-            email <- mkEmail guestEmailTxt
-            pure $ Entity ( GuestKey guestKey ) $ Guest
-              { guestFirstName = Nothing
-              , guestLastName = Nothing
-              , guestEmail = email
-              , guestPassword = password
-              , guestCreatedAt = currentTestTime
-              , guestUsername = guestUsernameTxt
-              , guestBio = Just guestBioTxt
-              , guestImageLink = Nothing
+            userKey <- UUID.fromText txtUUID
+            email <- mkEmail userEmailTxt
+            pure $ Entity ( UserKey userKey ) $ User
+              { userFirstName = Nothing
+              , userLastName = Nothing
+              , userEmail = email
+              , userPassword = password
+              , userCreatedAt = currentTestTime
+              , userUsername = usernameTxt
+              , userBio = Just userBioTxt
+              , userImageLink = Nothing
               }
-      mGuestProfile <- toGuestProfile guestEntity
-      case mGuestProfile of
-        Nothing -> error "no guest profile found"
-        Just guestProfile -> do
-          shouldBe ( UUID.toText $ guestProfileGuestId guestProfile ) txtUUID
+      mUserProfile <- toUserProfile userEntity
+      case mUserProfile of
+        Nothing -> error "no user profile found"
+        Just userProfile -> do
+          shouldBe ( UUID.toText $ userProfileId userProfile ) txtUUID
 
-    it "will create a guest record from CreateGuest input" $ do
-      let cGuest = CreateGuest
-            { createGuestFirstName = Nothing
-            , createGuestLastName  = Nothing
-            , createGuestEmail     = guestEmailTxt
-            , createGuestUsername  = guestUsernameTxt
-            , createGuestPassword  = guestPasswordTxt
-            , createGuestBio       = Just guestBioTxt
-            , createGuestImageLink = Nothing
+    it "will create a user record from CreateUser input" $ do
+      let cUser = CreateUser
+            { createUserFirstName = Nothing
+            , createUserLastName  = Nothing
+            , createUserEmail     = userEmailTxt
+            , createUserUsername  = usernameTxt
+            , createUserPassword  = userPasswordTxt
+            , createUserBio       = Just userBioTxt
+            , createUserImageLink = Nothing
             }
-      password <- mkPassword guestPasswordTxt
-      let guestRecordRes = toGuestRecord cGuest password currentTestTime
-      case guestRecordRes of
+      password <- mkPassword userPasswordTxt
+      let userRecordRes = toUserRecord cUser password currentTestTime
+      case userRecordRes of
         Left err -> error $ T.unpack err
-        Right Guest{..} -> do
-          shouldBe ( emailToText guestEmail ) "guest@test.com"
-          shouldBe guestUsername guestUsernameTxt
+        Right User{..} -> do
+          shouldBe ( emailToText userEmail ) "user@test.com"
+          shouldBe userUsername usernameTxt
 
-    it "will create a guest with token" $ do
-      maybePassword <- mkPassword guestPasswordTxt
+    it "will create a user with token" $ do
+      maybePassword <- mkPassword userPasswordTxt
       let
-        guestIdToToken :: Monad m => GuestId -> m Text
-        guestIdToToken guestId = pure
-          $ JWT.jsonToToken "secret" $ JSON.toJSON guestId
+        userIdToToken :: Monad m => UserId -> m Text
+        userIdToToken userId = pure
+          $ JWT.jsonToToken "secret" $ JSON.toJSON userId
 
-      let guestEntity = do
+      let userEntity = do
             password <- maybePassword
-            guestKey <- UUID.fromText txtUUID
-            email <- mkEmail guestEmailTxt
-            pure $ Entity ( GuestKey guestKey ) $ Guest
-              { guestFirstName = Nothing
-              , guestLastName = Nothing
-              , guestEmail = email
-              , guestPassword = password
-              , guestCreatedAt = currentTestTime
-              , guestUsername = guestUsernameTxt
-              , guestBio = Just guestBioTxt
-              , guestImageLink = Nothing
+            userKey <- UUID.fromText txtUUID
+            email <- mkEmail userEmailTxt
+            pure $ Entity ( UserKey userKey ) $ User
+              { userFirstName = Nothing
+              , userLastName = Nothing
+              , userEmail = email
+              , userPassword = password
+              , userCreatedAt = currentTestTime
+              , userUsername = usernameTxt
+              , userBio = Just userBioTxt
+              , userImageLink = Nothing
               }
 
-      mRes <- traverse ( toGuestAuth guestIdToToken "password" ) guestEntity
+      mRes <- traverse ( toUserAuth userIdToToken "password" ) userEntity
       case mRes of
-        Nothing -> error "no guest found"
+        Nothing -> error "no user found"
         Just res ->
           case res of
             Left err -> error $ T.unpack err
-            Right guest -> do
-              shouldBe ( ( == 0 ) . length $ guestAuthToken guest ) False
-              shouldBe ( JWT.tokenToJson "secret" ( guestAuthToken guest ) )
+            Right user -> do
+              shouldBe ( ( == 0 ) . length $ userAuthToken user ) False
+              shouldBe ( JWT.tokenToJson "secret" ( userAuthToken user ) )
                 $ Just ( JSON.String txtUUID )

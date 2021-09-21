@@ -8,12 +8,11 @@ module TestImport
     ) where
 
 -- real-world-yesod
-import           Api.Model.Guest
 import           Application
     ( makeFoundation
     , makeLogWare
     )
-import           Database.Model.Guest
+import           Database.Model.User
 import           Foundation
 import           Handler.Internal.Email
 import           Handler.Internal.Password
@@ -66,7 +65,10 @@ import           Test.HUnit                           ( assertFailure )
 import           Yesod.Core.Unsafe                    ( fakeHandlerGetLogger )
 
 -- http-types
-import           Network.HTTP.Types
+import           Network.HTTP.Types                   ( hAuthorization )
+
+-- base
+import           System.Environment
 
 runDB :: SqlPersistM a -> YesodExample App a
 runDB query = do
@@ -78,6 +80,7 @@ runDBWithApp app query = runSqlPersistMPool query ( appConnPool app )
 
 withApp :: SpecWith (TestApp App) -> Spec
 withApp = before $ do
+  setEnv "JWT_SECRET" "secret"
   settings <- loadYamlSettings
     ["config/test-settings.yml", "config/settings.yml"]
     []
@@ -111,20 +114,20 @@ getTables = do
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
-createGuest :: Text -> Text -> UTCTime -> YesodExample App (Entity Guest)
-createGuest username password createdAt = runDB $ do
+createUser :: Text -> Text -> UTCTime -> YesodExample App (Entity User)
+createUser username password createdAt = runDB $ do
   mPass <- mkPassword password
   let pass = maybe ( error "password error" ) id mPass
   let email = maybe ( error "email error" ) id $ mkEmail "test@test.com"
-  insertEntity Guest
-    { guestFirstName = Nothing
-    , guestLastName = Nothing
-    , guestEmail = email
-    , guestPassword = pass
-    , guestUsername = username
-    , guestCreatedAt = createdAt
-    , guestBio = Nothing
-    , guestImageLink = Nothing
+  insertEntity User
+    { userFirstName = Nothing
+    , userLastName = Nothing
+    , userEmail = email
+    , userPassword = pass
+    , userUsername = username
+    , userCreatedAt = createdAt
+    , userBio = Nothing
+    , userImageLink = Nothing
     }
 
 getJsonResponse :: FromJSON a => YesodExample App a
@@ -132,11 +135,12 @@ getJsonResponse =
   withResponse $ \SResponse{..} ->
   case fromJSON <$> decode simpleBody of
     Just ( Success a ) -> pure a
-    _ -> liftIO $ assertFailure $ "cannot decode JSON: " <> BL8.unpack simpleBody
+    _ -> do
+      liftIO $ assertFailure $ "cannot decode JSON: " <> BL8.unpack simpleBody
 
-authenticatedRequest :: GuestId -> RequestBuilder App () -> YesodExample App ()
-authenticatedRequest guestId reqBuilder = do
-  token <- runHandler $ guestIdToToken guestId
+authenticatedRequest :: UserId -> RequestBuilder App () -> YesodExample App ()
+authenticatedRequest userId reqBuilder = do
+  token <- runHandler $ userIdToToken userId
   request $ do
     addRequestHeader (hAuthorization, "token " <> encodeUtf8 token)
     reqBuilder

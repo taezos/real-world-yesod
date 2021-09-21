@@ -4,9 +4,9 @@
 module Handler.Profile where
 
 -- real-world-yesod
-import           Api.Guest
+import           Api.User
 import           Import
 
 getProfileR :: Text -> Handler Value
 getProfileR username =
-  fmap toJSON <$> runDB $ selectGuestProfileByUsernameIO username
+  fmap toJSON <$> runDB $ selectUserProfileByUsernameIO username
