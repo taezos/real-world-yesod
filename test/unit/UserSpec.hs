@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
-module ProfileSpec where
+module UserSpec where
 
 -- real-world-yesod
 import           Api.User
