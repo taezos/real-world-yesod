@@ -8,5 +8,6 @@ import           Api.User
 import           Import
 
 getProfileR :: Text -> Handler Value
-getProfileR username =
-  fmap toJSON <$> runDB $ selectUserProfileByUsernameIO username
+getProfileR username = do
+  mProfile <- runDB $ selectUserProfileByUsernameIO username
+  pure $ object [ "profile" .= mProfile ]

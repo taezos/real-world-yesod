@@ -211,3 +211,4 @@ tokenToUserId token = do
 getJwtSecret :: HandlerFor App Text
 getJwtSecret =
   getsYesod $ appJwtSecret . appSettings
+

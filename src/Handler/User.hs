@@ -10,17 +10,17 @@ import           Import
 
 postUserRegisterR :: Handler Value
 postUserRegisterR = do
-  createUser <- requireCheckJsonBody @Handler @CreateUser
+  createUser <- requireCheckJsonBody @Handler @( UserWrapper CreateUser )
   currentTime <- liftIO getCurrentTime
-  res <- runDB $ insertUserIO createUser currentTime
+  res <- runDB $ insertUserIO ( userWrapperUser createUser ) currentTime
   case res of
-    Left errMsg    -> sendResponseStatus status404 errMsg
+    Left errMsg   -> sendResponseStatus status404 errMsg
     Right userKey -> pure $ toJSON userKey
 
 postUserLoginR :: Handler Value
 postUserLoginR = do
-  userLogin <- requireCheckJsonBody @Handler @UserLogin
-  res <- runDB $ selectUserLoginIO userIdToToken userLogin
+  userLogin  <- requireCheckJsonBody @Handler @( UserWrapper UserLogin )
+  res <- runDB $ selectUserLoginIO userIdToToken ( userWrapperUser userLogin )
   case res of
-    Left errMsg     -> sendResponseStatus status404 errMsg
-    Right userAuth -> pure $ toJSON userAuth
+    Left errMsg    -> sendResponseStatus status404 errMsg
+    Right userAuth -> pure $ toJSON $ UserWrapper userAuth

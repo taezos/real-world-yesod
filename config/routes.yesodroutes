@@ -1,12 +1,13 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/api/user/profile/#Text ProfileR GET
+/api/profiles/#Text ProfileR GET
 
+/api/users UserRegisterR POST
+
+/api/users/login UserLoginR POST
+
+# TODO: remove
 /api/logout LogoutDestR GET
 
 /api/login LoginDestR POST
-
-/api/user UserRegisterR POST
-
-/api/user/login UserLoginR POST
