@@ -9,7 +9,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE UndecidableInstances       #-}
-module Database.Model.Guest where
+module Database.Model.User where
 
 -- real-world-yesod
 import           Data.Text
@@ -21,17 +21,21 @@ import           Instances                 ()
 -- uuid
 import           Data.UUID
 
+-- "Guest" is chosen as a table name because "user" is a reserved name in
+-- postgresql. It is them mapped to the user model here.
+-- see https://www.postgresql.org/docs/13/sql-keywords-appendix.html
 share [ mkPersist sqlSettings ] [persistLowerCase|
-Guest
+User sql=guest
   Id UUID default=uuid_generate_v4()
   firstName Text Maybe
   lastName  Text Maybe
-  email     Email Maybe
+  email     Email
   username  Text
   password  Password
   bio       Text Maybe
   imageLink Text Maybe
   createdAt UTCTime
-  UniqueGuest username
+  UniqueUser username
+  UniqueEmail email
   deriving Show
 |]

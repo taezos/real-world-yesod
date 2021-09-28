@@ -39,6 +39,6 @@ jwtKey = "jwt"
 
 extractToken :: Text -> Maybe Text
 extractToken auth
-  | toLower x ==  "token" = Just $ dropWhile isSpace y
+  | toLower x == "token" = Just $ dropWhile isSpace y
   | otherwise = Nothing
   where ( x, y ) = break isSpace auth

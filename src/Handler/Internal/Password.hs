@@ -6,10 +6,10 @@ module Handler.Internal.Password where
 import           Import.NoFoundation
 
 -- persistent
-import           Database.Persist.Sql ( PersistFieldSql (..) )
+import           Database.Persist.Sql          ( PersistFieldSql (..) )
 
 -- text
-import qualified Data.Text            as T
+import qualified Data.Text                     as T
 
 -- bcrypt
 import           Crypto.BCrypt
@@ -26,6 +26,10 @@ mkPassword pass = do
     $ hashPasswordUsingPolicy fastBcryptHashingPolicy
     ( encodeUtf8 pass )
   pure $ ( Password . decodeUtf8 ) <$> mPass
+
+verifyPassword :: Text -> Password -> Bool
+verifyPassword rawPassword Password{..} =
+  validatePassword ( encodeUtf8 unPassword ) $ encodeUtf8 rawPassword
 
 instance PersistField Password where
   toPersistValue Password {..} = PersistText unPassword

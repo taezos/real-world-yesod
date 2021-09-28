@@ -32,7 +32,7 @@ import           Database.Persist.Postgresql
     )
 
 -- real-world-yesod
-import           Handler.Guest
+import           Handler.User
 import           Handler.Login
 import           Handler.Logout
 import           Handler.Profile
@@ -101,8 +101,8 @@ makeFoundation appSettings = do
 
   -- Create the database connection pool
   pool <- flip runLoggingT logFunc $ createPostgresqlPool
-      (pgConnStr  $ appDatabaseConf appSettings)
-      (pgPoolSize $ appDatabaseConf appSettings)
+    (pgConnStr  $ appDatabaseConf appSettings)
+    (pgPoolSize $ appDatabaseConf appSettings)
 
   -- Return the foundation
   return $ mkFoundation pool

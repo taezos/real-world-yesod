@@ -11,7 +11,7 @@ module Foundation where
 
 -- real-world-yesod
 import qualified Auth.JWT             as JWT
-import           Database.Model.Guest
+import           Database.Model.User
 import           Import.NoFoundation
 
 -- persistent
@@ -99,20 +99,20 @@ instance Yesod App where
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ( AuthR _ ) _    = pure Authorized
+  isAuthorized UserLoginR _    = pure Authorized
   isAuthorized LogoutDestR _    = pure Authorized
   isAuthorized LoginDestR _     = pure Authorized
-  isAuthorized GuestRegisterR _ = pure Authorized
+  isAuthorized UserRegisterR _ = pure Authorized
   isAuthorized ( ProfileR _ ) _ = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
   -- in development, and warnings and errors in production.
   shouldLogIO :: App -> LogSource -> LogLevel -> IO Bool
   shouldLogIO app _source level =
-      return $
-      appShouldLogAll (appSettings app)
-          || level == LevelWarn
-          || level == LevelError
+    return $
+    appShouldLogAll (appSettings app)
+      || level == LevelWarn
+      || level == LevelError
 
   makeLogger :: App -> IO Logger
   makeLogger = return . appLogger
@@ -130,7 +130,7 @@ instance YesodPersistRunner App where
   getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
-  type AuthId App = GuestId
+  type AuthId App = UserId
 
   -- Where to send a user after successful login
   loginDest :: App -> Route App
@@ -153,7 +153,7 @@ instance YesodAuth App where
 
   maybeAuthId = do
     mToken <- JWT.lookupToken
-    liftHandler $ maybe ( pure Nothing ) tokenToGuestId mToken
+    liftHandler $ maybe ( pure Nothing ) tokenToUserId mToken
 
     -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
@@ -195,17 +195,17 @@ unsafeHandler = Unsafe.fakeHandlerGetLogger appLogger
 -- https://github.com/yesodweb/yesod/wiki/Serve-static-files-from-a-separate-domain
 -- https://github.com/yesodweb/yesod/wiki/i18n-messages-in-the-scaffolding
 
-guestIdToToken :: GuestId -> HandlerFor App Text
-guestIdToToken guestId = do
+userIdToToken :: UserId -> HandlerFor App Text
+userIdToToken userId = do
   jwtSecret <- getJwtSecret
-  pure $ JWT.jsonToToken jwtSecret $ toJSON guestId
+  pure $ JWT.jsonToToken jwtSecret $ toJSON userId
 
-tokenToGuestId :: Text -> Handler ( Maybe GuestId )
-tokenToGuestId token = do
+tokenToUserId :: Text -> Handler ( Maybe UserId )
+tokenToUserId token = do
   jwtSecret <- getJwtSecret
-  let mGuestId = fromJSON <$> JWT.tokenToJson jwtSecret token
-  case mGuestId of
-    Just ( Success guestId ) -> pure $ Just guestId
+  let mUserId = fromJSON <$> JWT.tokenToJson jwtSecret token
+  case mUserId of
+    Just ( Success userId ) -> pure $ Just userId
     _                        -> pure Nothing
 
 getJwtSecret :: HandlerFor App Text
