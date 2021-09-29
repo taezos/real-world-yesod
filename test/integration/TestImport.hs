@@ -145,6 +145,9 @@ authenticatedRequest userId reqBuilder = do
     addRequestHeader (hAuthorization, "token " <> encodeUtf8 token)
     reqBuilder
 
+testUserIdToToken :: UserId -> YesodExample App Text
+testUserIdToToken userId = runHandler $ userIdToToken userId
+
 runHandler :: Handler a -> YesodExample App a
 runHandler handler = do
   app <- getTestYesod

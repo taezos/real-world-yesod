@@ -7,9 +7,13 @@ import           Database.Model.User
 import           TestImport
 
 -- aeson
-import qualified Data.Aeson           as JSON
+import qualified Data.Aeson          as JSON
 
+-- http-types
 import           Network.HTTP.Types
+
+-- text
+import qualified Data.Text.Encoding  as TE
 
 spec :: Spec
 spec = withApp $ do
@@ -66,3 +70,18 @@ spec = withApp $ do
         setRequestBody $ JSON.encode userLogin
         addRequestHeader (hContentType, "application/json")
       statusIs 200
+
+    it "will return the current user" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      let userId = entityKey userEntity
+      token <- testUserIdToToken userId
+      authenticatedRequest userId $ do
+        setMethod "GET"
+        setUrl CurrentUserR
+        addRequestHeader (hContentType, "application/json")
+        addRequestHeader ("Authorization", "Token " <> TE.encodeUtf8 token )
+      statusIs 200
+      res <- getJsonResponse @( UserWrapper UserProfile )
+      assertEq "user email" ( userProfileEmail . userWrapperUser $ res )
+        $ Just "test@test.com"
