@@ -7,9 +7,13 @@ import           Database.Model.User
 import           TestImport
 
 -- aeson
-import qualified Data.Aeson           as JSON
+import qualified Data.Aeson          as JSON
 
+-- http-types
 import           Network.HTTP.Types
+
+-- unordered-containers
+import qualified Data.HashMap.Strict as HS
 
 spec :: Spec
 spec = withApp $ do
@@ -29,11 +33,11 @@ spec = withApp $ do
         Just ( Entity key _ ) -> do
           authenticatedRequest key $ do
             setUrl $ ProfileR usernameTxt
+          res <- getJsonResponse @( HashMap Text UserProfile )
           statusIs 200
-          response <- getJsonResponse @UserProfile
           assertEq "response username should be equal to username input"
-            ( userProfileUsername response )
-            usernameTxt
+            ( fmap userProfileUsername $ HS.lookup "profile" res )
+            $ Just usernameTxt
 
     it "will create a user" $ do
       let createUserInput = CreateUser
@@ -49,7 +53,7 @@ spec = withApp $ do
       request $ do
         setMethod "POST"
         setUrl UserRegisterR
-        setRequestBody $ JSON.encode createUserInput
+        setRequestBody $ JSON.encode ( UserWrapper createUserInput )
         addRequestHeader (hContentType, "application/json")
       statusIs 200
 
@@ -63,6 +67,18 @@ spec = withApp $ do
       request $ do
         setMethod "POST"
         setUrl UserLoginR
-        setRequestBody $ JSON.encode userLogin
+        setRequestBody $ JSON.encode ( UserWrapper userLogin )
         addRequestHeader (hContentType, "application/json")
       statusIs 200
+
+    it "will return the current user" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      authenticatedRequest ( entityKey userEntity ) $ do
+        setMethod "GET"
+        setUrl CurrentUserR
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200
+      res <- getJsonResponse @( UserWrapper UserProfile )
+      assertEq "user email" ( userProfileEmail . userWrapperUser $ res )
+        $ Just "test@test.com"

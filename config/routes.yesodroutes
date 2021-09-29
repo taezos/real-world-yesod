@@ -5,6 +5,8 @@
 
 /api/users UserRegisterR POST
 
+/api/user CurrentUserR GET
+
 /api/users/login UserLoginR POST
 
 -- Required default haskell routes. These will just return null
