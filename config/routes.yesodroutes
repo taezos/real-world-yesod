@@ -1,12 +1,13 @@
 -- By default this file is used by `parseRoutesFile` in Foundation.hs
 -- Syntax for this file here: https://www.yesodweb.com/book/routing-and-handlers
 
-/api/user/profile/#Text ProfileR GET
+/api/profiles/#Text ProfileR GET
 
-/api/logout LogoutDestR GET
+/api/users UserRegisterR POST
 
-/api/login LoginDestR POST
+/api/users/login UserLoginR POST
 
-/api/user UserRegisterR POST
+-- Required default haskell routes. These will just return null
+/logout LogoutDestR GET
 
-/api/user/login UserLoginR POST
+/login LoginDestR POST

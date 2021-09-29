@@ -50,6 +50,14 @@ data UserAuth = UserAuth
   , userAuthImage    :: Maybe Text
   } deriving ( Eq, Show )
 
+data UserWrapper a = UserWrapper
+  { userWrapperUser :: a
+  } deriving ( Eq, Show )
+
+$(deriveJSON defaultOptions
+  { fieldLabelModifier = camel . drop ( genericLength "UserWrapper" )
+  } ''UserWrapper)
+
 $(deriveJSON defaultOptions
   { fieldLabelModifier = camel . drop ( genericLength "UserLogin" )
   } ''UserLogin)
