@@ -32,10 +32,9 @@ import           Database.Persist.Postgresql
     )
 
 -- real-world-yesod
-import           Handler.User
-import           Handler.Login
-import           Handler.Logout
+import           Handler.Common
 import           Handler.Profile
+import           Handler.User
 import           Import
 
 -- tempalte-haskell

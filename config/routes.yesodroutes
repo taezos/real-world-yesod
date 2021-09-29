@@ -7,7 +7,7 @@
 
 /api/users/login UserLoginR POST
 
-# TODO: remove
-/api/logout LogoutDestR GET
+-- Required default haskell routes. These will just return null
+/logout LogoutDestR GET
 
-/api/login LoginDestR POST
+/login LoginDestR POST
