@@ -18,18 +18,20 @@ selectUserProfileByUsernameIO
   :: MonadIO m
   => Text
   -> SqlPersistT m ( Maybe UserProfile )
-selectUserProfileByUsernameIO username = do
-  mUserEntity <- selectFirst [ UserUsername ==. username ] []
-  toUserProfile mUserEntity
+selectUserProfileByUsernameIO username =
+  selectUserProfileIO [ UserUsername ==. username ]
 
 selectUserByIdIO
   :: MonadIO m
   => UserId
   -> SqlPersistT m ( Maybe UserProfile )
-selectUserByIdIO userId = do
-  mUserEntity <- selectFirst [ UserId ==. userId ] []
-  print mUserEntity
-  toUserProfile mUserEntity
+selectUserByIdIO userId = selectUserProfileIO [ UserId ==. userId ]
+
+selectUserProfileIO
+  :: MonadIO m
+  => [ Filter User ]
+  -> SqlPersistT m ( Maybe UserProfile )
+selectUserProfileIO dbFilter = toUserProfile =<< selectFirst dbFilter []
 
 selectUserLoginIO
   :: MonadIO m
@@ -51,7 +53,7 @@ toUserAuth
   -> Text
   -> Entity User
   -> m ( Either Text UserAuth )
-toUserAuth userIdToText rawPassword ( Entity gKey User{..} ) = do
+toUserAuth userIdToText rawPassword ( Entity gKey User {..} ) = do
   token <- userIdToText gKey
   if verifyPassword rawPassword userPassword
     then pure $ Right UserAuth
