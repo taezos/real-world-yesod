@@ -142,7 +142,7 @@ authenticatedRequest :: UserId -> RequestBuilder App () -> YesodExample App ()
 authenticatedRequest userId reqBuilder = do
   token <- runHandler $ userIdToToken userId
   request $ do
-    addRequestHeader (hAuthorization, "token " <> encodeUtf8 token)
+    addRequestHeader (hAuthorization, "Token " <> encodeUtf8 token)
     reqBuilder
 
 testUserIdToToken :: UserId -> YesodExample App Text
