@@ -24,3 +24,10 @@ postUserLoginR = do
   case res of
     Left errMsg    -> sendResponseStatus status404 errMsg
     Right userAuth -> pure $ toJSON $ UserWrapper userAuth
+
+getCurrentUserR :: Handler Value
+getCurrentUserR = do
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing     -> notAuthenticated
+    Just userId -> toJSON . UserWrapper <$> ( runDB $ selectUserByIdIO userId )

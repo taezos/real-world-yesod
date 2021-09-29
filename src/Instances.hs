@@ -15,7 +15,7 @@ import qualified Data.UUID             as UUID
 import qualified Data.ByteString.Char8 as B8
 
 instance PersistField UUID where
-  toPersistValue = PersistLiteral . B8.pack . UUID.toString
+  toPersistValue = toPersistValue . UUID.toString
   fromPersistValue ( PersistLiteral t ) =
     case UUID.fromString $ B8.unpack t of
       Nothing   -> Left "Invalid UUID"

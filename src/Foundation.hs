@@ -99,10 +99,15 @@ instance Yesod App where
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized UserLoginR _    = pure Authorized
+
+  -- authenticated routes
+  isAuthorized CurrentUserR _   = pure Authorized
+  isAuthorized UserLoginR _     = pure Authorized
   isAuthorized LogoutDestR _    = pure Authorized
   isAuthorized LoginDestR _     = pure Authorized
-  isAuthorized UserRegisterR _ = pure Authorized
+  isAuthorized UserRegisterR _  = pure Authorized
+
+  -- non-authenticated routes
   isAuthorized ( ProfileR _ ) _ = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
@@ -206,7 +211,7 @@ tokenToUserId token = do
   let mUserId = fromJSON <$> JWT.tokenToJson jwtSecret token
   case mUserId of
     Just ( Success userId ) -> pure $ Just userId
-    _                        -> pure Nothing
+    _                       -> pure Nothing
 
 getJwtSecret :: HandlerFor App Text
 getJwtSecret =

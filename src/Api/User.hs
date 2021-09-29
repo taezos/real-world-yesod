@@ -22,6 +22,15 @@ selectUserProfileByUsernameIO username = do
   mUserEntity <- selectFirst [ UserUsername ==. username ] []
   toUserProfile mUserEntity
 
+selectUserByIdIO
+  :: MonadIO m
+  => UserId
+  -> SqlPersistT m ( Maybe UserProfile )
+selectUserByIdIO userId = do
+  mUserEntity <- selectFirst [ UserId ==. userId ] []
+  print mUserEntity
+  toUserProfile mUserEntity
+
 selectUserLoginIO
   :: MonadIO m
   => ( Key User -> m Text )
@@ -79,7 +88,7 @@ insertUserIO cUser@CreateUser{..} createdOn = do
   maybePass <- mkPassword createUserPassword
   case toUserRecord cUser maybePass createdOn of
     Left errMsg -> pure $ Left errMsg
-    Right user -> Right . toRecordId <$> insert user
+    Right user  -> Right . toRecordId <$> insert user
   where
     toRecordId :: Key User -> DbRecordKey
     toRecordId kUser = DbRecordKey ( unUserKey kUser )
