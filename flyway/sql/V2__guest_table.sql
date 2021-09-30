@@ -7,5 +7,6 @@ create table if not exists guest (
   password varchar(250) not null unique,
   bio varchar(500),
   image_link varchar(250),
-  created_at timestamp
+  created_at timestamp,
+  updated_at timestamp
 );

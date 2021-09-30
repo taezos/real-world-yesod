@@ -5,7 +5,7 @@
 
 /api/users UserRegisterR POST
 
-/api/user CurrentUserR GET
+/api/user CurrentUserR GET PUT
 
 /api/users/login UserLoginR POST
 

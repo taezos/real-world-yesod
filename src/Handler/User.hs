@@ -31,3 +31,14 @@ getCurrentUserR = do
   case mUserId of
     Nothing     -> notAuthenticated
     Just userId -> toJSON . UserWrapper <$> ( runDB $ selectUserByIdIO userId )
+
+putCurrentUserR :: Handler Value
+putCurrentUserR = do
+  mUserId <- maybeAuthId
+  case mUserId of
+    Nothing -> notAuthenticated
+    Just userId -> do
+      now <- liftIO getCurrentTime
+      userUpdate <- requireCheckJsonBody @Handler @( UserWrapper UserUpdate )
+      res <- runDB $ updateUserIO userId ( userWrapperUser userUpdate ) now
+      pure $ toJSON $ UserWrapper res

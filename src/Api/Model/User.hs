@@ -50,9 +50,21 @@ data UserAuth = UserAuth
   , userAuthImage    :: Maybe Text
   } deriving ( Eq, Show )
 
+data UserUpdate = UserUpdate
+  { userUpdateEmail    :: Maybe Text
+  , userUpdateUsername :: Maybe Text
+  , userUpdatePassword :: Maybe Text
+  , userUpdateImage    :: Maybe Text
+  , userUpdateBio      :: Maybe Text
+  } deriving ( Eq, Show )
+
 data UserWrapper a = UserWrapper
   { userWrapperUser :: a
   } deriving ( Eq, Show )
+
+$(deriveJSON defaultOptions
+  { fieldLabelModifier = camel . drop ( genericLength "UserUpdate" )
+  } ''UserUpdate)
 
 $(deriveJSON defaultOptions
   { fieldLabelModifier = camel . drop ( genericLength "UserWrapper" )
