@@ -73,7 +73,7 @@ spec = do
           shouldBe ( emailToText userEmail ) "user@test.com"
           shouldBe userUsername usernameTxt
 
-    it "will create a user with token" $ do
+    it "will create a new user record" $ do
       maybePassword <- mkPassword userPasswordTxt
       let
         userIdToToken :: Monad m => UserId -> m Text
