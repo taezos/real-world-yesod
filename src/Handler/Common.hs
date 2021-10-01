@@ -10,3 +10,10 @@ postLoginDestR = pure JSON.Null
 
 getLogoutDestR :: Handler Value
 getLogoutDestR = pure JSON.Null
+
+maybeUpdate
+  :: PersistField t
+  => EntityField v t
+  -> Maybe t
+  -> Maybe ( Update v )
+maybeUpdate label = fmap ( label =. )

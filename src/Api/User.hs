@@ -10,9 +10,31 @@ module Api.User where
 import           Api.Common
 import           Api.Model.User
 import           Database.Model.User
+import           Handler.Common
 import           Handler.Internal.Email
 import           Handler.Internal.Password
 import           Import.NoFoundation
+
+updateUserIO
+  :: MonadIO m
+  => UserId
+  -> UserUpdate
+  -> UTCTime
+  -> SqlPersistT m ( Maybe UserProfile )
+updateUserIO userId UserUpdate{..} now = do
+  let mNewEmail = mkEmail =<< userUpdateEmail
+  mNewPassword <- join <$> traverse mkPassword userUpdatePassword
+
+  updatedUser  <- updateGet userId $ catMaybes
+    [ maybeUpdate UserEmail mNewEmail
+    , maybeUpdate UserUsername userUpdateUsername
+    , maybeUpdate UserPassword mNewPassword
+    , maybeUpdate UserImageLink ( Just userUpdateImage )
+    , maybeUpdate UserBio ( Just userUpdateBio )
+    , maybeUpdate UserUpdatedAt ( Just now )
+    ]
+
+  toUserProfile ( Just $ Entity userId updatedUser )
 
 selectUserProfileByUsernameIO
   :: MonadIO m
@@ -46,6 +68,20 @@ selectUserLoginIO userIdToText UserLogin{..} = do
     Nothing -> pure $ Left invalidEmailPassMsg
     Just userEntity -> lift
       $ toUserAuth userIdToText userLoginPassword userEntity
+
+insertUserIO
+  :: MonadIO m
+  => CreateUser
+  -> UTCTime
+  -> SqlPersistT m ( Either Text DbRecordKey )
+insertUserIO cUser@CreateUser{..} createdOn = do
+  maybePass <- mkPassword createUserPassword
+  case toUserRecord cUser maybePass createdOn of
+    Left errMsg -> pure $ Left errMsg
+    Right user  -> Right . toRecordId <$> insert user
+  where
+    toRecordId :: Key User -> DbRecordKey
+    toRecordId kUser = DbRecordKey ( unUserKey kUser )
 
 toUserAuth
   :: Monad m
@@ -81,22 +117,8 @@ toUserProfile mUserEntity =
       , userProfileImageLink = userImageLink
       }
 
-insertUserIO
-  :: MonadIO m
-  => CreateUser
-  -> UTCTime
-  -> SqlPersistT m ( Either Text DbRecordKey )
-insertUserIO cUser@CreateUser{..} createdOn = do
-  maybePass <- mkPassword createUserPassword
-  case toUserRecord cUser maybePass createdOn of
-    Left errMsg -> pure $ Left errMsg
-    Right user  -> Right . toRecordId <$> insert user
-  where
-    toRecordId :: Key User -> DbRecordKey
-    toRecordId kUser = DbRecordKey ( unUserKey kUser )
-
 toUserRecord :: CreateUser -> Maybe Password -> UTCTime -> Either Text User
-toUserRecord CreateUser{..} maybePass createdAt = do
+toUserRecord CreateUser{..} maybePass now = do
   email <- maybe ( Left invalidEmailPassMsg ) Right $ mkEmail createUserEmail
   case mkCreds maybePass of
     Nothing -> Left invalidEmailPassMsg
@@ -107,9 +129,10 @@ toUserRecord CreateUser{..} maybePass createdAt = do
         , userEmail = email
         , userUsername = createUserUsername
         , userPassword = password
-        , userCreatedAt = createdAt
+        , userCreatedAt = now
         , userBio = createUserBio
         , userImageLink = createUserImageLink
+        , userUpdatedAt = now
         }
   where
     mkCreds :: Maybe Password -> Maybe Password

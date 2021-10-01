@@ -35,6 +35,7 @@ User sql=guest
   bio       Text Maybe
   imageLink Text Maybe
   createdAt UTCTime
+  updatedAt UTCTime
   UniqueUser username
   UniqueEmail email
   deriving Show

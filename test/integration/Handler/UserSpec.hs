@@ -82,3 +82,73 @@ spec = withApp $ do
       res <- getJsonResponse @( UserWrapper UserProfile )
       assertEq "user email" ( userProfileEmail . userWrapperUser $ res )
         $ Just "test@test.com"
+
+    it "will update a user" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      let defaultUser = UserUpdate
+            { userUpdateEmail     = Nothing
+            , userUpdateUsername  = Nothing
+            , userUpdatePassword  = Nothing
+            , userUpdateImage     = Nothing
+            , userUpdateBio       = Nothing
+            }
+
+      authenticatedRequest ( entityKey userEntity ) $ do
+        setMethod "PUT"
+        setUrl CurrentUserR
+        setRequestBody $ JSON.encode
+          $ UserWrapper
+          $ defaultUser { userUpdateEmail = Just "new-email@test.com" }
+        addRequestHeader (hContentType, "application/json")
+
+      statusIs 200
+
+      res <- getJsonResponse @( UserWrapper UserProfile )
+
+      assertEq "update email" ( userProfileEmail . userWrapperUser $ res )
+        $ Just "new-email@test.com"
+
+      assertEq  "only update email" ( userWrapperUser res )
+        $ UserProfile
+          { userProfileId         = unUserKey $ entityKey userEntity
+          , userProfileEmail      = Just "new-email@test.com"
+          , userProfileFirstName  = Nothing
+          , userProfileLastName   = Nothing
+          , userProfileUsername   = usernameTxt
+          , userProfileBio        = Nothing
+          , userProfileImageLink  = Nothing
+          }
+
+    it "will update user password" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      let defaultUser = UserUpdate
+            { userUpdateEmail     = Nothing
+            , userUpdateUsername  = Nothing
+            , userUpdatePassword  = Nothing
+            , userUpdateImage     = Nothing
+            , userUpdateBio       = Nothing
+            }
+
+      authenticatedRequest ( entityKey userEntity ) $ do
+        setMethod "PUT"
+        setUrl CurrentUserR
+        setRequestBody $ JSON.encode
+          $ UserWrapper
+          $ defaultUser { userUpdatePassword = Just "new-password" }
+        addRequestHeader (hContentType, "application/json")
+
+      statusIs 200
+
+      let userLogin = UserLogin
+            { userLoginEmail = "test@test.com"
+            , userLoginPassword = "new-password"
+            }
+
+      request $ do
+        setMethod "POST"
+        setUrl UserLoginR
+        setRequestBody $ JSON.encode ( UserWrapper userLogin )
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200

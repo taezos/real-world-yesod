@@ -4,8 +4,8 @@
 module UserSpec where
 
 -- real-world-yesod
-import           Api.User
 import           Api.Model.User
+import           Api.User
 import qualified Auth.JWT                  as JWT
 import           Database.Model.User
 import           Handler.Internal.Email
@@ -45,6 +45,7 @@ spec = do
               , userEmail = email
               , userPassword = password
               , userCreatedAt = currentTestTime
+              , userUpdatedAt = currentTestTime
               , userUsername = usernameTxt
               , userBio = Just userBioTxt
               , userImageLink = Nothing
@@ -73,7 +74,7 @@ spec = do
           shouldBe ( emailToText userEmail ) "user@test.com"
           shouldBe userUsername usernameTxt
 
-    it "will create a user with token" $ do
+    it "will create a new user record" $ do
       maybePassword <- mkPassword userPasswordTxt
       let
         userIdToToken :: Monad m => UserId -> m Text
@@ -90,6 +91,7 @@ spec = do
               , userEmail = email
               , userPassword = password
               , userCreatedAt = currentTestTime
+              , userUpdatedAt = currentTestTime
               , userUsername = usernameTxt
               , userBio = Just userBioTxt
               , userImageLink = Nothing
