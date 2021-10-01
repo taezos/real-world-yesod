@@ -4,8 +4,8 @@
 module UserSpec where
 
 -- real-world-yesod
-import           Api.User
 import           Api.Model.User
+import           Api.User
 import qualified Auth.JWT                  as JWT
 import           Database.Model.User
 import           Handler.Internal.Email
@@ -45,6 +45,7 @@ spec = do
               , userEmail = email
               , userPassword = password
               , userCreatedAt = currentTestTime
+              , userUpdatedAt = currentTestTime
               , userUsername = usernameTxt
               , userBio = Just userBioTxt
               , userImageLink = Nothing
@@ -90,6 +91,7 @@ spec = do
               , userEmail = email
               , userPassword = password
               , userCreatedAt = currentTestTime
+              , userUpdatedAt = currentTestTime
               , userUsername = usernameTxt
               , userBio = Just userBioTxt
               , userImageLink = Nothing

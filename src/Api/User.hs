@@ -69,6 +69,20 @@ selectUserLoginIO userIdToText UserLogin{..} = do
     Just userEntity -> lift
       $ toUserAuth userIdToText userLoginPassword userEntity
 
+insertUserIO
+  :: MonadIO m
+  => CreateUser
+  -> UTCTime
+  -> SqlPersistT m ( Either Text DbRecordKey )
+insertUserIO cUser@CreateUser{..} createdOn = do
+  maybePass <- mkPassword createUserPassword
+  case toUserRecord cUser maybePass createdOn of
+    Left errMsg -> pure $ Left errMsg
+    Right user  -> Right . toRecordId <$> insert user
+  where
+    toRecordId :: Key User -> DbRecordKey
+    toRecordId kUser = DbRecordKey ( unUserKey kUser )
+
 toUserAuth
   :: Monad m
   => ( Key User -> m Text )
@@ -102,20 +116,6 @@ toUserProfile mUserEntity =
       , userProfileBio = userBio
       , userProfileImageLink = userImageLink
       }
-
-insertUserIO
-  :: MonadIO m
-  => CreateUser
-  -> UTCTime
-  -> SqlPersistT m ( Either Text DbRecordKey )
-insertUserIO cUser@CreateUser{..} createdOn = do
-  maybePass <- mkPassword createUserPassword
-  case toUserRecord cUser maybePass createdOn of
-    Left errMsg -> pure $ Left errMsg
-    Right user  -> Right . toRecordId <$> insert user
-  where
-    toRecordId :: Key User -> DbRecordKey
-    toRecordId kUser = DbRecordKey ( unUserKey kUser )
 
 toUserRecord :: CreateUser -> Maybe Password -> UTCTime -> Either Text User
 toUserRecord CreateUser{..} maybePass now = do
