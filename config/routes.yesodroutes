@@ -9,6 +9,8 @@
 
 /api/users/login UserLoginR POST
 
+/api/profiles/#Text/follow FollowUserR POST DELETE
+
 -- Required default haskell routes. These will just return null
 /logout LogoutDestR GET
 

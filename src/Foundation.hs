@@ -101,14 +101,15 @@ instance Yesod App where
   -- delegate to that function
 
   -- authenticated routes
-  isAuthorized CurrentUserR _   = pure Authorized
-  isAuthorized UserLoginR _     = pure Authorized
-  isAuthorized LogoutDestR _    = pure Authorized
-  isAuthorized LoginDestR _     = pure Authorized
-  isAuthorized UserRegisterR _  = pure Authorized
+  isAuthorized ( FollowUserR _ ) _ = pure Authorized
+  isAuthorized CurrentUserR _      = pure Authorized
+  isAuthorized UserLoginR _        = pure Authorized
+  isAuthorized LogoutDestR _       = pure Authorized
+  isAuthorized LoginDestR _        = pure Authorized
+  isAuthorized UserRegisterR _     = pure Authorized
 
   -- non-authenticated routes
-  isAuthorized ( ProfileR _ ) _ = isAuthenticated
+  isAuthorized ( ProfileR _ ) _    = isAuthenticated
 
   -- What messages should be logged. The following includes all messages when
   -- in development, and warnings and errors in production.
