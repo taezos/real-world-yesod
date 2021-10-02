@@ -10,10 +10,59 @@ module Api.User where
 import           Api.Common
 import           Api.Model.User
 import           Database.Model.User
+import           Database.Model.UserFollowing
 import           Handler.Common
 import           Handler.Internal.Email
 import           Handler.Internal.Password
 import           Import.NoFoundation
+
+-- esqueleto
+import qualified Database.Esqueleto.Legacy    as E
+
+insertUserFollowing
+  :: MonadIO m
+  => UserId
+  -> Text
+  -> UTCTime
+  -> SqlPersistT m ( Either Text UserProfile )
+insertUserFollowing userId username createdAt = do
+  mUserEntity <- selectFirst [ UserUsername ==. username ] []
+  case mUserEntity of
+    Nothing -> pure $ Left "User not found"
+    Just userFollowingEntity@( Entity followingUserId _ ) -> do
+      followings <- selectList
+        [ UserFollowingUserId ==. userId
+        , UserFollowingFollowingUserId ==. followingUserId
+        ] []
+      if length followings > 0
+        then pure $ Left "User already following this username"
+        else do
+          insert_ $ UserFollowing userId followingUserId createdAt
+          Right <$> toUserProfile userFollowingEntity
+
+removeUserFollowing
+  :: MonadIO m
+  => UserId
+  -> Text
+  -> SqlPersistT m ( Either Text UserProfile )
+removeUserFollowing userId username = do
+  mUserEntity <- selectFirst [ UserUsername ==. username ] []
+  case mUserEntity of
+    Nothing -> pure $ Left "User not found"
+    Just userFollowingEntity@( Entity followingUserId _ ) -> do
+      followings <- selectList
+        [ UserFollowingUserId ==. userId
+        , UserFollowingFollowingUserId ==. followingUserId
+        ] []
+      if length followings == 0
+        then pure $ Left "User not following this username"
+        else do
+          deleteUserFollowing followingUserId
+          Right <$> toUserProfile userFollowingEntity
+
+deleteUserFollowing :: MonadIO m => UserId -> SqlPersistT m ()
+deleteUserFollowing uid = E.delete $ E.from $ \userFollowing ->
+  E.where_ $ userFollowing E.^. UserFollowingFollowingUserId E.==. E.val uid
 
 updateUserIO
   :: MonadIO m
@@ -34,7 +83,7 @@ updateUserIO userId UserUpdate{..} now = do
     , maybeUpdate UserUpdatedAt ( Just now )
     ]
 
-  toUserProfile ( Just $ Entity userId updatedUser )
+  traverse toUserProfile ( Just $ Entity userId updatedUser )
 
 selectUserProfileByUsernameIO
   :: MonadIO m
@@ -53,7 +102,8 @@ selectUserProfileIO
   :: MonadIO m
   => [ Filter User ]
   -> SqlPersistT m ( Maybe UserProfile )
-selectUserProfileIO dbFilter = toUserProfile =<< selectFirst dbFilter []
+selectUserProfileIO dbFilter =
+  traverse toUserProfile =<< selectFirst dbFilter []
 
 selectUserLoginIO
   :: MonadIO m
@@ -103,19 +153,18 @@ toUserAuth userIdToText rawPassword ( Entity gKey User {..} ) = do
 
 toUserProfile
   :: Monad m
-  => Maybe ( Entity User )
-  -> m ( Maybe UserProfile )
-toUserProfile mUserEntity =
-  pure $ mUserEntity
-    <&> \( Entity gKey User{..}) -> UserProfile
-      { userProfileId = unUserKey gKey
-      , userProfileEmail = Just $ emailToText userEmail
-      , userProfileFirstName = userFirstName
-      , userProfileLastName = userLastName
-      , userProfileUsername = userUsername
-      , userProfileBio = userBio
-      , userProfileImageLink = userImageLink
-      }
+  => Entity User
+  -> m UserProfile
+toUserProfile ( Entity gKey User{..} ) = pure
+  $ UserProfile
+  { userProfileId = unUserKey gKey
+  , userProfileEmail = Just $ emailToText userEmail
+  , userProfileFirstName = userFirstName
+  , userProfileLastName = userLastName
+  , userProfileUsername = userUsername
+  , userProfileBio = userBio
+  , userProfileImageLink = userImageLink
+  }
 
 toUserRecord :: CreateUser -> Maybe Password -> UTCTime -> Either Text User
 toUserRecord CreateUser{..} maybePass now = do

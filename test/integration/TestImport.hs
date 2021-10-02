@@ -114,11 +114,11 @@ getTables = do
 
 -- | Create a user.  The dummy email entry helps to confirm that foreign-key
 -- checking is switched off in wipeDB for those database backends which need it.
-createUser :: Text -> Text -> UTCTime -> YesodExample App (Entity User)
-createUser username password now = runDB $ do
+createUser :: Text -> Text -> Text -> UTCTime -> YesodExample App (Entity User)
+createUser emailTxt username password now = runDB $ do
   mPass <- mkPassword password
   let pass = maybe ( error "password error" ) id mPass
-  let email = maybe ( error "email error" ) id $ mkEmail "test@test.com"
+  let email = maybe ( error "email error" ) id $ mkEmail emailTxt
   insertEntity User
     { userFirstName = Nothing
     , userLastName = Nothing

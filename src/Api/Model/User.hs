@@ -62,6 +62,14 @@ data UserWrapper a = UserWrapper
   { userWrapperUser :: a
   } deriving ( Eq, Show )
 
+data ProfileWrapper a =  ProfileWrapper
+  { profileWrapperProfile :: a
+  } deriving ( Eq, Show )
+
+$(deriveJSON defaultOptions
+  { fieldLabelModifier = camel . drop ( genericLength "ProfileWrapper" )
+  } ''ProfileWrapper)
+
 $(deriveJSON defaultOptions
   { fieldLabelModifier = camel . drop ( genericLength "UserUpdate" )
   } ''UserUpdate)

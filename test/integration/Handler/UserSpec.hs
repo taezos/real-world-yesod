@@ -17,6 +17,7 @@ import qualified Data.HashMap.Strict as HS
 
 spec :: Spec
 spec = withApp $ do
+  let userEmailTxt = "test@test.com"
   let userPasswordTxt = "password"
   let usernameTxt = "username"
   describe "UserSpec" $ do
@@ -26,7 +27,7 @@ spec = withApp $ do
 
     it "will return a user with an authenticated request" $ do
       currentTime <- liftIO getCurrentTime
-      void $ createUser usernameTxt userPasswordTxt currentTime
+      void $ createUser userEmailTxt usernameTxt userPasswordTxt currentTime
       mRes <- runDB $ selectFirst [ UserUsername ==. usernameTxt ] []
       case mRes of
         Nothing -> error "user does not exist"
@@ -59,7 +60,7 @@ spec = withApp $ do
 
     it "will login a user" $ do
       currentTime <- liftIO getCurrentTime
-      void $ createUser usernameTxt userPasswordTxt currentTime
+      void $ createUser userEmailTxt usernameTxt userPasswordTxt currentTime
       let userLogin = UserLogin
             { userLoginEmail = "test@test.com"
             , userLoginPassword = userPasswordTxt
@@ -73,7 +74,7 @@ spec = withApp $ do
 
     it "will return the current user" $ do
       currentTime <- liftIO getCurrentTime
-      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      userEntity <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
       authenticatedRequest ( entityKey userEntity ) $ do
         setMethod "GET"
         setUrl CurrentUserR
@@ -85,7 +86,7 @@ spec = withApp $ do
 
     it "will update a user" $ do
       currentTime <- liftIO getCurrentTime
-      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      userEntity <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
       let defaultUser = UserUpdate
             { userUpdateEmail     = Nothing
             , userUpdateUsername  = Nothing
@@ -122,7 +123,7 @@ spec = withApp $ do
 
     it "will update user password" $ do
       currentTime <- liftIO getCurrentTime
-      userEntity <- createUser usernameTxt userPasswordTxt currentTime
+      userEntity <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
       let defaultUser = UserUpdate
             { userUpdateEmail     = Nothing
             , userUpdateUsername  = Nothing
@@ -152,3 +153,73 @@ spec = withApp $ do
         setRequestBody $ JSON.encode ( UserWrapper userLogin )
         addRequestHeader (hContentType, "application/json")
       statusIs 200
+
+    it "will follow a user by username" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity1 <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
+      userEntity2 <- createUser "test2@test.com" "username2" userPasswordTxt currentTime
+
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "POST"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200
+
+      res <- getJsonResponse @( ProfileWrapper UserProfile )
+      assertEq "return userid of user being followed"
+        ( userProfileId . profileWrapperProfile $ res )
+        $ unUserKey $ entityKey userEntity2
+
+    it "will unfollow a user by username" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity1 <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
+      userEntity2 <- createUser "test2@test.com" "username2" userPasswordTxt currentTime
+
+      -- follow a user
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "POST"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200
+
+      -- unfollow user
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "DELETE"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200
+
+      res <- getJsonResponse @( ProfileWrapper UserProfile )
+      assertEq "return userid of user being unfollowed"
+        ( userProfileId . profileWrapperProfile $ res )
+        $ unUserKey $ entityKey userEntity2
+
+    it "will return a 422 if the user is already following the username" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity1 <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
+      _userEntity2 <- createUser "test2@test.com" "username2" userPasswordTxt currentTime
+
+      -- follow a user
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "POST"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 200
+
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "POST"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 422
+
+    it "will return a 422 if trying to unfollow a user that was not followed" $ do
+      currentTime <- liftIO getCurrentTime
+      userEntity1 <- createUser userEmailTxt usernameTxt userPasswordTxt currentTime
+      _userEntity2 <- createUser "test2@test.com" "username2" userPasswordTxt currentTime
+
+      -- unfollow user
+      authenticatedRequest  ( entityKey userEntity1 ) $ do
+        setMethod "DELETE"
+        setUrl $ FollowUserR "username2"
+        addRequestHeader (hContentType, "application/json")
+      statusIs 422

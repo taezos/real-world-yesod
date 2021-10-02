@@ -35,7 +35,7 @@ spec = do
   describe "UserSpec" $ do
     it "will build a user profile from a user entity" $ do
       maybePassword <- mkPassword userPasswordTxt
-      let userEntity = do
+      let userEntity  = do
             password <- maybePassword
             userKey <- UUID.fromText txtUUID
             email <- mkEmail userEmailTxt
@@ -50,7 +50,7 @@ spec = do
               , userBio = Just userBioTxt
               , userImageLink = Nothing
               }
-      mUserProfile <- toUserProfile userEntity
+      mUserProfile <- traverse toUserProfile userEntity
       case mUserProfile of
         Nothing -> error "no user profile found"
         Just userProfile -> do
